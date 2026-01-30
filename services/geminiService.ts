@@ -3,13 +3,13 @@ import { AIResponse, ChatMessage, AI_MODELS } from "../types";
 
 // Allow dynamic API key and model injection
 let appApiKey = process.env.API_KEY || "";
-let appModel = "gemini-3-pro-preview";
+let appModel = "gemini-2.0-flash";
 
 // Fallback sequence: if default fails, try these in order
 const FALLBACK_MODELS = [
-  "gemini-3-flash-preview",
-  "gemini-3-pro-preview", 
-  "gemini-2.5-flash"
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro"
 ];
 
 export const setApiKey = (key: string) => {
@@ -34,16 +34,16 @@ const cleanJsonString = (str: string): string => {
 
 // Generic helper to generate content with fallback logic
 const generateContentWithFallback = async (
-  contents: any, 
-  config: any, 
+  contents: any,
+  config: any,
   preferredModel: string = appModel
 ): Promise<any> => {
   const ai = getClient();
-  
+
   // List of models to try: Preferred model -> Fallback list
   // Use Set to remove duplicates
   const modelsToTry = Array.from(new Set([preferredModel, ...FALLBACK_MODELS]));
-  
+
   let lastError = null;
 
   for (const model of modelsToTry) {
@@ -72,7 +72,7 @@ export const generateSpeech = async (text: string): Promise<string> => {
   try {
     // TTS typically uses a specific model, fallbacks for audio might be limited to specific supported models
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
+      model: "gemini-2.0-flash-live-001",
       contents: { parts: [{ text }] },
       config: {
         responseModalities: [Modality.AUDIO],
@@ -81,7 +81,7 @@ export const generateSpeech = async (text: string): Promise<string> => {
         }
       }
     });
-    
+
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (!base64Audio) throw new Error("No audio generated");
     return base64Audio;
@@ -95,7 +95,7 @@ export const analyzeWriting = async (
   text: string,
   taskType: "IELTS" | "TOEIC" | "General" = "General"
 ): Promise<AIResponse> => {
-  
+
   const prompt = `
     Act as an expert English teacher and examiner for ${taskType}.
     Analyze the following text provided by a student.
@@ -161,7 +161,7 @@ export const interactWithExaminer = async (
   specificQuestion?: string,
   isFinish: boolean = false
 ): Promise<{ userTranscription: string; aiResponse: string; aiAudioBase64?: string }> => {
-  
+
   // Construct context from history
   const context = history.map(h => `${h.role === 'ai' ? 'Examiner' : 'Student'}: ${h.text}`).join("\n");
 
@@ -181,17 +181,17 @@ export const interactWithExaminer = async (
   if (!userAudioBase64) {
     // Start of session
     if (specificQuestion) {
-        prompt = `Start the interview. Introduce yourself briefly (1 sentence) and ask exactly this question: "${specificQuestion}". Return JSON: { "transcription": "", "response": "Your intro and question" }`;
+      prompt = `Start the interview. Introduce yourself briefly (1 sentence) and ask exactly this question: "${specificQuestion}". Return JSON: { "transcription": "", "response": "Your intro and question" }`;
     } else {
-        prompt = `Start the interview. Introduce yourself briefly and ask the first question about "${topic}". Return JSON: { "transcription": "", "response": "Your intro and question" }`;
+      prompt = `Start the interview. Introduce yourself briefly and ask the first question about "${topic}". Return JSON: { "transcription": "", "response": "Your intro and question" }`;
     }
     parts.push({ text: prompt });
   } else {
     // User responded
     const transcriptionInstruction = "1. Transcribe the user's audio accurately.";
-    
+
     if (isFinish) {
-        prompt = `
+      prompt = `
           The user just answered the final question via audio.
           ${transcriptionInstruction}
           2. Generate a brief polite closing statement (e.g. "Thank you for your answers. The test is now finished.").
@@ -200,7 +200,7 @@ export const interactWithExaminer = async (
           Return JSON: { "transcription": "exact words spoken by student", "response": "Closing statement" }
         `;
     } else if (specificQuestion) {
-        prompt = `
+      prompt = `
           The user just answered via audio. 
           ${transcriptionInstruction}
           2. Generate a brief, natural response to acknowledge their answer (e.g., "That's interesting," "I see").
@@ -210,7 +210,7 @@ export const interactWithExaminer = async (
           Return JSON: { "transcription": "exact words spoken by student", "response": "Your reaction + next question" }
         `;
     } else {
-        prompt = `
+      prompt = `
           The user just answered via audio. 
           ${transcriptionInstruction}
           2. Generate a brief, natural response to acknowledge their answer (e.g., "That's interesting," "I see").
@@ -220,7 +220,7 @@ export const interactWithExaminer = async (
           Return JSON: { "transcription": "exact words spoken by student", "response": "Your reaction + next question" }
         `;
     }
-    
+
     parts.push({ inlineData: { mimeType: "audio/webm; codecs=opus", data: userAudioBase64 } });
     parts.push({ text: prompt });
   }
@@ -236,7 +236,7 @@ export const interactWithExaminer = async (
 
     const jsonText = cleanJsonString(response.text || "{}");
     const result = JSON.parse(jsonText);
-    
+
     // Generate TTS Audio for the response
     let aiAudioBase64 = "";
     if (result.response) {
@@ -260,7 +260,7 @@ export const gradeSpeakingSession = async (
   topic: string,
   lastAudioBase64?: string // Optional: pass the last audio chunk if needed for specific analysis, but text is primary here
 ): Promise<AIResponse> => {
-  
+
   const transcript = fullHistory.map(h => `${h.role.toUpperCase()}: ${h.text}`).join("\n");
 
   const prompt = `
@@ -345,7 +345,7 @@ export const analyzePronunciation = async (
   audioBase64: string,
   targetText: string
 ): Promise<AIResponse> => {
-  
+
   const prompt = `
     Act as a strict pronunciation coach.
     The student is trying to read this specific sentence: "${targetText}".
@@ -408,7 +408,7 @@ export const analyzePronunciation = async (
         parts: [
           {
             inlineData: {
-              mimeType: "audio/webm; codecs=opus", 
+              mimeType: "audio/webm; codecs=opus",
               data: audioBase64
             }
           },
@@ -425,3 +425,4 @@ export const analyzePronunciation = async (
     throw error;
   }
 };
+
