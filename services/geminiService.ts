@@ -3,13 +3,13 @@ import { AIResponse, ChatMessage, AI_MODELS } from "../types";
 
 // Allow dynamic API key and model injection
 let appApiKey = process.env.API_KEY || "";
-let appModel = "gemini-2.0-flash";
+let appModel = "gemini-1.5-flash";
 
 // Fallback sequence: if default fails, try these in order
 const FALLBACK_MODELS = [
-  "gemini-2.0-flash",
   "gemini-1.5-flash",
-  "gemini-1.5-pro"
+  "gemini-1.5-pro",
+  "gemini-pro"
 ];
 
 export const setApiKey = (key: string) => {
@@ -72,7 +72,7 @@ export const generateSpeech = async (text: string): Promise<string> => {
   try {
     // TTS typically uses a specific model, fallbacks for audio might be limited to specific supported models
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-live-001",
+      model: "gemini-1.5-flash",
       contents: { parts: [{ text }] },
       config: {
         responseModalities: [Modality.AUDIO],
@@ -425,4 +425,3 @@ export const analyzePronunciation = async (
     throw error;
   }
 };
-
