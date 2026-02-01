@@ -9,7 +9,7 @@ let appModel = "gemini-2.0-flash";
 const FALLBACK_MODELS = [
   "gemini-2.0-flash",
   "gemini-1.5-flash",
-  "gemini-1.5-pro"
+  "gemini-2.0-flash-exp"
 ];
 
 // TTS dedicated model
