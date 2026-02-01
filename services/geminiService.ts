@@ -4,14 +4,13 @@ import { AIResponse, ChatMessage, AI_MODELS } from "../types";
 // Allow dynamic API key and model injection
 let appApiKey = process.env.API_KEY || "";
 let appModel = "gemini-3-pro-preview";
-
+// Fallback sequence: if default fails, try these in order
 // Fallback sequence: if default fails, try these in order
 const FALLBACK_MODELS = [
   "gemini-3-pro-preview",
   "gemini-3-flash",
   "gemini-2.5-flash"
 ];
-// TTS dedicated model
 const TTS_MODEL = "gemini-2.5-flash-preview-tts";
 
 // Helper for delay in retry logic
