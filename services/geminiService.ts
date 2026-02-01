@@ -3,14 +3,24 @@ import { AIResponse, ChatMessage, AI_MODELS } from "../types";
 
 // Allow dynamic API key and model injection
 let appApiKey = process.env.API_KEY || "";
-let appModel = "gemini-1.5-flash";
+let appModel = "gemini-2.0-flash";
 
 // Fallback sequence: if default fails, try these in order
 const FALLBACK_MODELS = [
+  "gemini-2.0-flash",
   "gemini-1.5-flash",
-  "gemini-1.5-pro",
-  "gemini-2.0-flash"
+  "gemini-1.5-pro"
 ];
+
+// TTS dedicated model
+const TTS_MODEL = "gemini-2.5-flash-preview-tts";
+
+// Helper for delay in retry logic
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 2000;
 
 export const setApiKey = (key: string) => {
   appApiKey = key;
@@ -64,30 +74,66 @@ const generateContentWithFallback = async (
 
   // If we get here, all models failed
   console.error("All AI models failed.");
-  throw new Error(`AI Service Unavailable: ${lastError?.message || "Unknown error"}. Please check your API Key quota.`);
+  const errorMsg = lastError?.message || "Unknown error";
+  if (errorMsg.includes('429')) {
+    throw new Error(`API quota exceeded. Vui lòng đợi vài giây và thử lại, hoặc kiểm tra quota API của bạn.`);
+  }
+  throw new Error(`AI Service Unavailable: ${errorMsg}. Vui lòng kiểm tra API Key trong Settings.`);
+};
+
+// Wrapper with exponential backoff retry for 429 errors
+const withRetry = async <T>(
+  operation: () => Promise<T>,
+  operationName: string = "AI operation"
+): Promise<T> => {
+  let lastError: any = null;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+      const is429 = error.message?.includes('429') || error.message?.includes('quota') || error.message?.includes('RESOURCE_EXHAUSTED');
+
+      if (is429 && attempt < MAX_RETRIES - 1) {
+        const waitTime = BASE_DELAY_MS * Math.pow(2, attempt);
+        console.log(`[${operationName}] Rate limited (attempt ${attempt + 1}/${MAX_RETRIES}). Retrying in ${waitTime}ms...`);
+        await delay(waitTime);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
 };
 
 export const generateSpeech = async (text: string): Promise<string> => {
   const ai = getClient();
   try {
-    // TTS typically uses a specific model, fallbacks for audio might be limited to specific supported models
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: { parts: [{ text }] },
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
+    // Use dedicated TTS model for audio generation
+    const response = await withRetry(async () => {
+      return await ai.models.generateContent({
+        model: TTS_MODEL,
+        contents: { parts: [{ text }] },
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
+          }
         }
-      }
-    });
+      });
+    }, "TTS");
 
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) throw new Error("No audio generated");
+    if (!base64Audio) {
+      console.warn("TTS: No audio data in response");
+      return "";
+    }
     return base64Audio;
-  } catch (error) {
-    console.error("TTS Error:", error);
-    return ""; // Return empty string if TTS fails, so chat can continue with text only
+  } catch (error: any) {
+    console.error("TTS Error:", error.message);
+    // Return empty string if TTS fails, so chat can continue with text only
+    return "";
   }
 };
 
@@ -132,15 +178,18 @@ export const analyzeWriting = async (
   `;
 
   try {
-    const response = await generateContentWithFallback(
-      prompt,
-      { responseMimeType: "application/json" }
+    const response = await withRetry(
+      () => generateContentWithFallback(
+        prompt,
+        { responseMimeType: "application/json" }
+      ),
+      "Writing Analysis"
     );
 
     const jsonText = cleanJsonString(response.text || "{}");
     return JSON.parse(jsonText) as AIResponse;
-  } catch (error) {
-    console.error("Gemini Writing Error:", error);
+  } catch (error: any) {
+    console.error("Gemini Writing Error:", error.message);
     throw error;
   }
 };
@@ -226,12 +275,15 @@ export const interactWithExaminer = async (
   }
 
   try {
-    const response = await generateContentWithFallback(
-      { parts: parts },
-      {
-        systemInstruction: systemInstruction,
-        responseMimeType: "application/json"
-      }
+    const response = await withRetry(
+      () => generateContentWithFallback(
+        { parts: parts },
+        {
+          systemInstruction: systemInstruction,
+          responseMimeType: "application/json"
+        }
+      ),
+      "Speaking Interaction"
     );
 
     const jsonText = cleanJsonString(response.text || "{}");
@@ -248,8 +300,8 @@ export const interactWithExaminer = async (
       aiResponse: result.response,
       aiAudioBase64
     };
-  } catch (error) {
-    console.error("Gemini Interaction Error:", error);
+  } catch (error: any) {
+    console.error("Gemini Interaction Error:", error.message);
     throw error;
   }
 };
@@ -328,15 +380,18 @@ export const gradeSpeakingSession = async (
   contents.parts.push({ text: prompt });
 
   try {
-    const response = await generateContentWithFallback(
-      contents,
-      { responseMimeType: "application/json" }
+    const response = await withRetry(
+      () => generateContentWithFallback(
+        contents,
+        { responseMimeType: "application/json" }
+      ),
+      "Speaking Grading"
     );
 
     const jsonText = cleanJsonString(response.text || "{}");
     return JSON.parse(jsonText) as AIResponse;
-  } catch (error) {
-    console.error("Gemini Grading Error:", error);
+  } catch (error: any) {
+    console.error("Gemini Grading Error:", error.message);
     throw error;
   }
 };
@@ -403,25 +458,28 @@ export const analyzePronunciation = async (
   `;
 
   try {
-    const response = await generateContentWithFallback(
-      {
-        parts: [
-          {
-            inlineData: {
-              mimeType: "audio/webm; codecs=opus",
-              data: audioBase64
-            }
-          },
-          { text: prompt }
-        ]
-      },
-      { responseMimeType: "application/json" }
+    const response = await withRetry(
+      () => generateContentWithFallback(
+        {
+          parts: [
+            {
+              inlineData: {
+                mimeType: "audio/webm; codecs=opus",
+                data: audioBase64
+              }
+            },
+            { text: prompt }
+          ]
+        },
+        { responseMimeType: "application/json" }
+      ),
+      "Pronunciation Analysis"
     );
 
     const jsonText = cleanJsonString(response.text || "{}");
     return JSON.parse(jsonText) as AIResponse;
-  } catch (error) {
-    console.error("Gemini Pronunciation Error:", error);
+  } catch (error: any) {
+    console.error("Gemini Pronunciation Error:", error.message);
     throw error;
   }
 };
