@@ -12,7 +12,7 @@ function App() {
    const [activeTab, setActiveTab] = useState<SkillMode>(SkillMode.DASHBOARD);
    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
    const [currentApiKey, setCurrentApiKey] = useState('');
-   const [currentModel, setCurrentModel] = useState('gemini-1.5-flash');
+   const [currentModel, setCurrentModel] = useState('gemini-2.0-flash');
 
    // User Progress State
    const [stats, setStats] = useState<UserStats>({
@@ -38,7 +38,7 @@ function App() {
             setCurrentModel(savedModel);
          }
 
-         handleLogin(savedUser, savedKey, savedModel || 'gemini-1.5-flash');
+         handleLogin(savedUser, savedKey, savedModel || 'gemini-2.0-flash');
       }
    }, []);
 
