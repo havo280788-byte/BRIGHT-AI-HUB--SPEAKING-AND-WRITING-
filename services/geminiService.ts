@@ -11,7 +11,6 @@ const FALLBACK_MODELS = [
   "gemini-3-flash",
   "gemini-2.5-flash"
 ];
-
 // TTS dedicated model
 const TTS_MODEL = "gemini-2.5-flash-preview-tts";
 
