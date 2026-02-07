@@ -143,7 +143,7 @@ export const analyzeWriting = async (
 ): Promise<AIResponse> => {
 
   const prompt = `
-    Act as an expert English teacher and examiner for ${taskType}. 
+    Act as an expert IELTS Writing examiner for ${taskType}. 
     
     **CRITICAL: ALL YOUR FEEDBACK, EXPLANATIONS, AND SUGGESTIONS MUST BE WRITTEN IN ENGLISH. DO NOT WRITE IN VIETNAMESE.**
     
@@ -151,54 +151,83 @@ export const analyzeWriting = async (
     
     Student Text: "${text}"
 
+    Your task is to evaluate the student's writing based STRICTLY on the following IELTS Writing rubric (Total 10 points):
+
+    **1. Task Response - Max 2.5 points**
+    - 2.5 pts: Fully addresses all parts of the task, presents a well-developed response with relevant, extended and supported ideas.
+    - 2.0 pts: Addresses all parts of the task, presents a clear position with relevant main ideas, but some may be inadequately developed.
+    - 1.5 pts: Addresses the task only partially, position may be unclear, ideas may be irrelevant or not fully developed.
+    - 1.0 pt: Barely addresses the task, position is unclear, ideas are largely undeveloped or irrelevant.
+    - 0 pts: Does not address the task at all.
+
+    **2. Coherence and Cohesion - Max 2.5 points**
+    - 2.5 pts: Logically organizes information and ideas, uses a range of cohesive devices appropriately, clear paragraphing.
+    - 2.0 pts: Arranges information coherently, uses cohesive devices but may be mechanical, clear overall progression.
+    - 1.5 pts: Presents information with some organization but lacks overall progression, inadequate or overuse of cohesive devices.
+    - 1.0 pt: Does not organize ideas logically, limited use of cohesive devices, difficult to follow.
+    - 0 pts: No apparent organization.
+
+    **3. Lexical Resource (Vocabulary) - Max 2.5 points**
+    - 2.5 pts: Uses a wide range of vocabulary fluently and flexibly, uses uncommon lexical items with style, rare errors in spelling/word formation.
+    - 2.0 pts: Uses a sufficient range of vocabulary, attempts less common vocabulary with some inaccuracy, occasional errors do not impede meaning.
+    - 1.5 pts: Uses limited range of vocabulary, errors in word choice and spelling may cause difficulty.
+    - 1.0 pt: Uses only basic vocabulary, frequent errors in word choice and spelling.
+    - 0 pts: Vocabulary is extremely limited.
+
+    **4. Grammatical Range and Accuracy - Max 2.5 points**
+    - 2.5 pts: Uses a wide range of structures, majority of sentences are error-free, rare minor errors.
+    - 2.0 pts: Uses a variety of complex structures, errors rarely reduce communication, good control of grammar.
+    - 1.5 pts: Uses a mix of simple and complex sentences, frequent grammatical errors may cause some difficulty.
+    - 1.0 pt: Uses only a limited range of structures, errors are frequent and may cause strain.
+    - 0 pts: Cannot use sentence forms except in memorized phrases.
+
     Your task:
-    1. Check for grammatical errors, spelling mistakes, and awkward phrasing.
-    2. Suggest better vocabulary appropriate for a high-level context.
-    3. Give a band score (0-10 scale based on accuracy and complexity).
+    1. Score strictly based on the rubric above.
+    2. Identify grammatical errors, spelling mistakes, and awkward phrasing.
+    3. Suggest better vocabulary appropriate for a high-level context.
     4. Provide a rewritten, improved version of the text.
-    5. Provide specific sub-scores for: Task Response, Coherence & Cohesion, Lexical Resource, Grammatical Range & Accuracy.
-    6. For each criterion, provide detailed feedback in English explaining the score.
-    7. For each criterion, provide 2-3 specific suggestions for improvement in English.
+    5. For each criterion, provide detailed feedback in English explaining the score.
+    6. For each criterion, provide 2-3 specific suggestions for improvement in English.
 
     **IMPORTANT: Write ALL feedback, explanations, and suggestions in English.**
 
     Return the result strictly in this JSON format:
     {
-      "score": number,
+      "score": number, // Total score out of 10
       "scoreBreakdown": {
-        "Task Response": number,
-        "Coherence": number,
-        "Vocabulary": number,
-        "Grammar": number
+        "Task Response": number, // Max 2.5
+        "Coherence": number, // Max 2.5
+        "Vocabulary": number, // Max 2.5
+        "Grammar": number // Max 2.5
       },
       "feedback": "string (General encouraging feedback in English)",
       "rubricFeedback": [
         {
           "criterion": "Task Response",
           "score": number,
-          "maxScore": 10,
-          "feedback": "string (Detailed assessment of how well the task requirements were addressed)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of how well the task requirements were addressed, ideas developed)",
           "suggestions": ["Improvement suggestion 1 in English", "Improvement suggestion 2 in English"]
         },
         {
-          "criterion": "Coherence",
+          "criterion": "Coherence and Cohesion",
           "score": number,
-          "maxScore": 10,
-          "feedback": "string (Detailed assessment of coherence and cohesion)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of organization, paragraphing, and use of cohesive devices)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         },
         {
-          "criterion": "Vocabulary",
+          "criterion": "Lexical Resource",
           "score": number,
-          "maxScore": 10,
-          "feedback": "string (Detailed assessment of vocabulary usage)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of vocabulary range, accuracy, and appropriateness)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         },
         {
-          "criterion": "Grammar",
+          "criterion": "Grammatical Range and Accuracy",
           "score": number,
-          "maxScore": 10,
-          "feedback": "string (Detailed assessment of grammatical accuracy)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of sentence structures and grammatical accuracy)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         }
       ],
@@ -353,7 +382,7 @@ export const gradeSpeakingSession = async (
   const transcript = fullHistory.map(h => `${h.role.toUpperCase()}: ${h.text}`).join("\n");
 
   const prompt = `
-    Act as a Speaking Examiner. 
+    Act as a Speaking Examiner following IELTS speaking assessment standards. 
     
     **CRITICAL: ALL YOUR FEEDBACK, EXPLANATIONS, AND SUGGESTIONS MUST BE WRITTEN IN ENGLISH. DO NOT WRITE IN VIETNAMESE.**
     
@@ -363,29 +392,35 @@ export const gradeSpeakingSession = async (
     
     ${transcript}
 
-    Your task is to evaluate the student's performance based STRICTLY on the following rubric (Total 10 points):
+    Your task is to evaluate the student's performance based STRICTLY on the following IELTS-style rubric (Total 10 points):
 
-    **1. Content - Max 3 points**
-    - 3 pts: Answers are relevant, clear ideas, includes examples/explanations.
-    - 2 pts: Relevant but simple ideas.
-    - 1 pt: Unclear ideas, rambling or not directly answering.
-    - 0 pts: No answer.
+    **1. Fluency and Coherence - Max 2.5 points**
+    - 2.5 pts: Speaks fluently with steady pace, minimal hesitation, logical organization of ideas, uses cohesive devices naturally.
+    - 2.0 pts: Generally fluent but occasional hesitation, ideas mostly organized logically.
+    - 1.5 pts: Noticeable hesitation, some repetition, ideas sometimes lack clear connection.
+    - 1.0 pt: Frequent pauses, fragmented speech, difficulty maintaining coherent response.
+    - 0 pts: Unable to produce connected speech.
 
-    **2. Language - Max 3 points**
-    - 3 pts: Appropriate vocabulary, accurate sentences.
-    - 2 pts: Minor errors but understandable.
-    - 1 pt: Many errors, limited vocabulary.
-    - 0 pts: Severe errors, unintelligible.
+    **2. Lexical Resource (Vocabulary) - Max 2.5 points**
+    - 2.5 pts: Wide range of vocabulary, uses collocations and idiomatic expressions naturally, precise word choice.
+    - 2.0 pts: Good vocabulary range, generally appropriate word choice, some collocations used correctly.
+    - 1.5 pts: Adequate vocabulary but limited range, some word choice errors, basic collocations.
+    - 1.0 pt: Limited vocabulary, frequent errors affecting meaning, relies on basic words.
+    - 0 pts: Extremely limited vocabulary, unable to convey meaning.
 
-    **3. Pronunciation - Max 2 points**
-    - 2 pts: Clear pronunciation, natural intonation.
-    - 1 pt: Some errors but understandable.
-    - 0 pts: Poor pronunciation, hard to hear.
+    **3. Grammatical Range and Accuracy - Max 2.5 points**
+    - 2.5 pts: Uses a variety of complex structures accurately, errors are rare and minor.
+    - 2.0 pts: Mix of simple and complex sentences, most structures are accurate.
+    - 1.5 pts: Attempts complex structures but with frequent errors, relies mainly on simple sentences.
+    - 1.0 pt: Limited range of structures, many grammatical errors affecting communication.
+    - 0 pts: Severe grammatical errors, communication greatly impaired.
 
-    **4. Fluency - Max 2 points**
-    - 2 pts: Fluent, confident speaking.
-    - 1 pt: Hesitant, pauses often.
-    - 0 pts: Very hesitant or silent.
+    **4. Pronunciation - Max 2.5 points**
+    - 2.5 pts: Clear pronunciation, natural intonation and stress patterns, easy to understand throughout.
+    - 2.0 pts: Generally clear, some minor pronunciation issues, mostly understandable.
+    - 1.5 pts: Some pronunciation errors, occasional strain on listener, but still understandable.
+    - 1.0 pt: Frequent pronunciation errors, difficult to understand at times.
+    - 0 pts: Very poor pronunciation, mostly unintelligible.
 
     Analyze the transcript (and audio context if available) to determine the score.
     
@@ -394,46 +429,46 @@ export const gradeSpeakingSession = async (
     2. Detailed feedback explaining WHY the student received that score (in English)
     3. 2-3 specific suggestions for improvement (in English)
 
-    Identify any specific errors in pronunciation or grammar from the text provided.
+    Identify any specific errors in pronunciation, grammar, or vocabulary from the text provided.
 
     Return the result strictly in this JSON format:
     {
       "transcription": "Full session transcript...",
       "score": number, // Total score out of 10
       "scoreBreakdown": {
-         "Content": number, // Max 3
-         "Language": number, // Max 3
-         "Pronunciation": number, // Max 2
-         "Fluency": number // Max 2
+         "Fluency": number, // Max 2.5
+         "Vocabulary": number, // Max 2.5
+         "Grammar": number, // Max 2.5
+         "Pronunciation": number // Max 2.5
       },
       "feedback": "string (Overall feedback in English)",
       "rubricFeedback": [
         {
-          "criterion": "Content",
+          "criterion": "Fluency and Coherence",
           "score": number,
-          "maxScore": 3,
-          "feedback": "string (Detailed assessment of content quality)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of fluency, pace, hesitation, and logical organization)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         },
         {
-          "criterion": "Language",
+          "criterion": "Lexical Resource",
           "score": number,
-          "maxScore": 3,
-          "feedback": "string (Detailed assessment of grammar and vocabulary)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of vocabulary range, collocations, and word choice)",
+          "suggestions": ["Suggestion in English", "Suggestion in English"]
+        },
+        {
+          "criterion": "Grammatical Range and Accuracy",
+          "score": number,
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of sentence structures and grammatical accuracy)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         },
         {
           "criterion": "Pronunciation",
           "score": number,
-          "maxScore": 2,
-          "feedback": "string (Detailed assessment of pronunciation)",
-          "suggestions": ["Suggestion in English", "Suggestion in English"]
-        },
-        {
-          "criterion": "Fluency",
-          "score": number,
-          "maxScore": 2,
-          "feedback": "string (Detailed assessment of fluency)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of pronunciation, intonation, and stress)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         }
       ],
@@ -478,36 +513,42 @@ export const analyzePronunciation = async (
 ): Promise<AIResponse> => {
 
   const prompt = `
-    Act as a strict pronunciation coach. 
+    Act as a strict pronunciation coach following IELTS speaking assessment standards. 
     
     **CRITICAL: ALL YOUR FEEDBACK, EXPLANATIONS, AND SUGGESTIONS MUST BE WRITTEN IN ENGLISH. DO NOT WRITE IN VIETNAMESE.**
     
-    The student is trying to read this specific sentence: "${targetText}".
-    Analyze the attached audio recording based on the following rubric (Total 10 points).
+    The student is trying to read/shadow this specific sentence: "${targetText}".
+    Analyze the attached audio recording based on the following IELTS-style rubric (Total 10 points).
 
     **RUBRIC CRITERIA:**
 
-    **1. Articulation - Max 3 points**
-    - 3 pts: Clear pronunciation, correct ending sounds and difficult sounds.
-    - 2 pts: Minor errors but still understandable.
-    - 1 pt: Many errors, causing confusion.
-    - 0 pts: Severe pronunciation errors.
+    **1. Fluency and Coherence - Max 2.5 points**
+    - 2.5 pts: Speaks fluently with steady pace, smooth flow, good linking sounds, no unnecessary pauses.
+    - 2.0 pts: Generally fluent with minor hesitation, mostly smooth delivery.
+    - 1.5 pts: Noticeable hesitation, some choppy delivery, word-by-word reading.
+    - 1.0 pt: Frequent pauses, fragmented speech, poor rhythm.
+    - 0 pts: Unable to produce connected speech.
 
-    **2. Intonation & Stress - Max 3 points**
-    - 3 pts: Correct stress, natural intonation.
-    - 2 pts: Some stress but inconsistent.
-    - 1 pt: Little stress, monotone.
-    - 0 pts: No intonation.
+    **2. Lexical Resource (Vocabulary Pronunciation) - Max 2.5 points**
+    - 2.5 pts: All words pronounced correctly, including difficult vocabulary and multi-syllable words.
+    - 2.0 pts: Most words correct, minor errors on difficult words.
+    - 1.5 pts: Some vocabulary mispronounced, but meaning still clear.
+    - 1.0 pt: Many words mispronounced, affecting comprehension.
+    - 0 pts: Most words unintelligible.
 
-    **3. Fluency & Linking - Max 2 points**
-    - 2 pts: Seamless flow, good linking.
-    - 1 pt: Slight pauses.
-    - 0 pts: Hesitant, many pauses.
+    **3. Grammatical Accuracy (Sentence Flow) - Max 2.5 points**
+    - 2.5 pts: Reads with proper sentence structure awareness, correct pausing at punctuation, maintains sentence meaning.
+    - 2.0 pts: Good sentence flow, mostly appropriate pausing.
+    - 1.5 pts: Some awkward pauses breaking sentence structure.
+    - 1.0 pt: Poor sentence flow, pauses in wrong places.
+    - 0 pts: No awareness of sentence structure.
 
-    **4. Confidence & Attitude - Max 2 points**
-    - 2 pts: Confident, clear voice.
-    - 1 pt: Slightly shy.
-    - 0 pts: Lack of focus/confidence.
+    **4. Pronunciation (Individual Sounds & Intonation) - Max 2.5 points**
+    - 2.5 pts: Clear individual sounds, correct ending consonants, natural intonation, proper word stress.
+    - 2.0 pts: Generally clear, minor sound errors, mostly natural intonation.
+    - 1.5 pts: Some sound errors (th, s, ed endings), flat intonation.
+    - 1.0 pt: Many sound errors, monotone delivery.
+    - 0 pts: Very poor pronunciation, unintelligible.
 
     Your task:
     1. Transcribe exactly what the student said.
@@ -521,41 +562,41 @@ export const analyzePronunciation = async (
     Return the result strictly in this JSON format:
     {
       "transcription": "string",
-      "score": number (Sum of criteria points, integer 0-10),
+      "score": number (Sum of criteria points, 0-10),
       "scoreBreakdown": {
-         "Articulation": number,
-         "Intonation": number,
-         "Fluency": number,
-         "Confidence": number
+         "Fluency": number, // Max 2.5
+         "Vocabulary": number, // Max 2.5
+         "Grammar": number, // Max 2.5
+         "Pronunciation": number // Max 2.5
       },
       "feedback": "string (Overall comment in English)",
       "rubricFeedback": [
         {
-          "criterion": "Articulation",
+          "criterion": "Fluency and Coherence",
           "score": number,
-          "maxScore": 3,
-          "feedback": "string (Detailed assessment of articulation)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of fluency, pace, and flow)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         },
         {
-          "criterion": "Intonation",
+          "criterion": "Lexical Resource",
           "score": number,
-          "maxScore": 3,
-          "feedback": "string (Detailed assessment of intonation and stress)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of vocabulary pronunciation)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         },
         {
-          "criterion": "Fluency",
+          "criterion": "Grammatical Accuracy",
           "score": number,
-          "maxScore": 2,
-          "feedback": "string (Detailed assessment of fluency and linking)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of sentence flow and structure)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         },
         {
-          "criterion": "Confidence",
+          "criterion": "Pronunciation",
           "score": number,
-          "maxScore": 2,
-          "feedback": "string (Detailed assessment of confidence)",
+          "maxScore": 2.5,
+          "feedback": "string (Detailed assessment of individual sounds, intonation, and stress)",
           "suggestions": ["Suggestion in English", "Suggestion in English"]
         }
       ],

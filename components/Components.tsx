@@ -92,17 +92,23 @@ interface RubricFeedbackItem {
 
 const getCriterionIcon = (criterion: string) => {
   switch (criterion.toLowerCase()) {
-    // Speaking criteria
+    // IELTS Speaking criteria
+    case 'fluency and coherence': return 'fa-water';
+    case 'lexical resource': return 'fa-book';
+    case 'grammatical range and accuracy': return 'fa-spell-check';
+    case 'grammatical accuracy': return 'fa-spell-check';
+    case 'pronunciation': return 'fa-volume-up';
+    // Legacy speaking criteria (fallback)
     case 'content': return 'fa-lightbulb';
     case 'language': return 'fa-language';
-    case 'pronunciation': return 'fa-volume-up';
     case 'fluency': return 'fa-water';
-    // Shadowing criteria
+    // Legacy shadowing criteria
     case 'articulation': return 'fa-microphone';
     case 'intonation': return 'fa-music';
     case 'confidence': return 'fa-user-check';
-    // Writing criteria
+    // IELTS Writing criteria
     case 'task response': return 'fa-tasks';
+    case 'coherence and cohesion': return 'fa-link';
     case 'coherence': return 'fa-link';
     case 'vocabulary': return 'fa-book';
     case 'grammar': return 'fa-spell-check';
@@ -112,17 +118,23 @@ const getCriterionIcon = (criterion: string) => {
 
 const getCriterionColor = (criterion: string) => {
   switch (criterion.toLowerCase()) {
-    // Speaking criteria
+    // IELTS Speaking criteria
+    case 'fluency and coherence': return { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-200', gradient: 'from-teal-400 to-teal-500' };
+    case 'lexical resource': return { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', gradient: 'from-emerald-400 to-emerald-500' };
+    case 'grammatical range and accuracy': return { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-200', gradient: 'from-violet-400 to-violet-500' };
+    case 'grammatical accuracy': return { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-200', gradient: 'from-violet-400 to-violet-500' };
+    case 'pronunciation': return { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200', gradient: 'from-orange-400 to-orange-500' };
+    // Legacy speaking criteria (fallback)
     case 'content': return { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200', gradient: 'from-purple-400 to-purple-500' };
     case 'language': return { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200', gradient: 'from-blue-400 to-blue-500' };
-    case 'pronunciation': return { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200', gradient: 'from-orange-400 to-orange-500' };
     case 'fluency': return { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-200', gradient: 'from-teal-400 to-teal-500' };
-    // Shadowing criteria
+    // Legacy shadowing criteria
     case 'articulation': return { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', gradient: 'from-red-400 to-red-500' };
     case 'intonation': return { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-200', gradient: 'from-pink-400 to-pink-500' };
     case 'confidence': return { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', gradient: 'from-amber-400 to-amber-500' };
-    // Writing criteria
+    // IELTS Writing criteria
     case 'task response': return { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200', gradient: 'from-indigo-400 to-indigo-500' };
+    case 'coherence and cohesion': return { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-200', gradient: 'from-cyan-400 to-cyan-500' };
     case 'coherence': return { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-200', gradient: 'from-cyan-400 to-cyan-500' };
     case 'vocabulary': return { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', gradient: 'from-emerald-400 to-emerald-500' };
     case 'grammar': return { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-200', gradient: 'from-violet-400 to-violet-500' };
