@@ -646,7 +646,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
           </div>
 
           <h2 className="text-4xl font-extrabold text-gray-900 mb-2">Unit Complete!</h2>
-          <p className="text-xl text-gray-500 mb-8">Kết quả bài nói của bạn</p>
+          <p className="text-xl text-gray-500 mb-8">Here is your speaking result</p>
 
           <div className="grid grid-cols-2 gap-6 max-w-2xl mx-auto mb-10">
             <div className="bg-purple-50 p-6 rounded-3xl border border-purple-100 shadow-sm">

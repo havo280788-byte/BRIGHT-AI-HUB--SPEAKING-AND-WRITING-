@@ -217,7 +217,7 @@ function App() {
                         </div>
                         {(!currentApiKey || currentApiKey.length < 10) && (
                            <span className="text-[10px] font-bold text-red-500 mt-1 bg-red-50 px-2 py-0.5 rounded-md border border-red-100 whitespace-nowrap animate-pulse">
-                              Lấy API Key để sử dụng app
+                              Get API Key to use the app
                            </span>
                         )}
                      </button>
