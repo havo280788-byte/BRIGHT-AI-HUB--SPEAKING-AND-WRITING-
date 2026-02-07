@@ -660,7 +660,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
           </div>
 
           <div className="bg-gray-50 rounded-3xl p-8 max-w-lg mx-auto mb-8 border border-gray-200">
-            <p className="text-gray-500 font-bold uppercase tracking-widest text-sm mb-3">Tổng điểm</p>
+            <p className="text-gray-500 font-bold uppercase tracking-widest text-sm mb-3">Total Score</p>
             <div className="text-7xl font-black text-gray-900 tracking-tight">{totalScore.toFixed(1)}<span className="text-3xl text-gray-400 font-normal">/10</span></div>
           </div>
 
@@ -672,7 +672,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
                   <i className="fas fa-comment-dots text-xl"></i>
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-blue-800 mb-2">Nhận Xét Chung</p>
+                  <p className="font-bold text-blue-800 mb-2">General Feedback</p>
                   <p className="text-gray-700 leading-relaxed">{finalResult.feedback}</p>
                 </div>
               </div>
@@ -681,20 +681,20 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
           {passed ? (
             <div className="space-y-6">
-              <p className="text-green-600 font-bold text-xl">🎉 Chúc mừng! Bạn đã hoàn thành xuất sắc bài nói.</p>
+              <p className="text-green-600 font-bold text-xl">🎉 Congratulations! You have completed this speaking task excellently.</p>
               <button
                 onClick={handleDownloadCertificate}
                 className="px-10 py-5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-xl rounded-2xl shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 transform hover:-translate-y-1 transition-all flex items-center gap-3 mx-auto"
               >
                 <i className="fas fa-certificate text-2xl"></i>
-                Tải Chứng Chỉ
+                Download Certificate
               </button>
             </div>
           ) : (
             <div className="space-y-6">
-              <p className="text-orange-600 font-bold text-xl">Hãy luyện tập thêm để đạt 6.0 điểm và nhận chứng chỉ!</p>
+              <p className="text-orange-600 font-bold text-xl">Keep practicing to reach 6.0 to unlock your certificate!</p>
               <Button onClick={handleBackToUnits}>
-                Quay Lại Chọn Bài
+                Return to Units
               </Button>
             </div>
           )}
@@ -709,7 +709,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
         {/* Score Breakdown (if available) */}
         {finalResult?.scoreBreakdown && (
-          <Card title="Điểm Từng Tiêu Chí">
+          <Card title="Score Breakdown">
             <ScoreBreakdown breakdown={finalResult.scoreBreakdown} max={3} />
           </Card>
         )}
@@ -723,7 +723,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
         {/* Transcript Section */}
         {finalResult?.transcription && (
-          <Card title="Nội Dung Cuộc Hội Thoại">
+          <Card title="Conversation Transcript">
             <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
               <pre className="whitespace-pre-wrap text-gray-700 font-mono text-sm leading-relaxed">
                 {finalResult.transcription}
@@ -735,10 +735,10 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
         {/* Action Buttons */}
         <div className="flex justify-center gap-4 pt-4 pb-8">
           <Button variant="secondary" onClick={handleBackToMode}>
-            <i className="fas fa-redo mr-2"></i> Làm Lại
+            <i className="fas fa-redo mr-2"></i> Try Again
           </Button>
           <Button onClick={handleBackToUnits}>
-            <i className="fas fa-home mr-2"></i> Chọn Bài Khác
+            <i className="fas fa-home mr-2"></i> Choose Another Unit
           </Button>
         </div>
       </div>
@@ -893,7 +893,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
               <div className="w-full space-y-8 animate-fade-in">
                 <div className="flex flex-col items-center">
                   <ScoreCircle score={(result.score / 10) * 5} />
-                  <p className="mt-4 text-gray-500 font-bold uppercase">Điểm Phát Âm (Quy về thang 5.0)</p>
+                  <p className="mt-4 text-gray-500 font-bold uppercase">Pronunciation Score (Scaled to 5.0)</p>
                   <div className="text-4xl font-extrabold text-gray-800 mt-2">{(result.score / 10 * 5).toFixed(1)}<span className="text-xl text-gray-400">/5</span></div>
 
                   {/* General Feedback */}
@@ -903,7 +903,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
                         <i className="fas fa-comment-dots"></i>
                       </div>
                       <div className="text-left">
-                        <p className="font-bold text-blue-800 mb-1">Nhận Xét Chung</p>
+                        <p className="font-bold text-blue-800 mb-1">General Feedback</p>
                         <p className="text-gray-700 leading-relaxed">{result.feedback}</p>
                       </div>
                     </div>
@@ -921,7 +921,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
                 {result.scoreBreakdown && (
                   <div className="mt-6">
                     <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      <i className="fas fa-chart-bar text-blue-500"></i> Điểm Từng Tiêu Chí
+                      <i className="fas fa-chart-bar text-blue-500"></i> Score Breakdown
                     </h4>
                     <ScoreBreakdown breakdown={result.scoreBreakdown} max={3} />
                   </div>
@@ -936,10 +936,10 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
                 <div className="flex justify-center gap-4 mt-8">
                   <Button variant="secondary" onClick={() => setResult(null)}>
-                    <i className="fas fa-rotate-left mr-2"></i> Thử Lại
+                    <i className="fas fa-rotate-left mr-2"></i> Try Again
                   </Button>
                   <Button onClick={handleSavePart1}>
-                    <i className="fas fa-check mr-2"></i> Lưu & Hoàn Thành Part 1
+                    <i className="fas fa-check mr-2"></i> Save & Complete Part 1
                   </Button>
                 </div>
               </div>

@@ -69,8 +69,8 @@ export const ScoreBreakdown: React.FC<{ breakdown: Record<string, number>; max?:
           <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden p-[2px]">
             <div
               className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${val >= max * 0.8 ? 'bg-gradient-to-r from-green-400 to-green-500' :
-                  val >= max * 0.5 ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
-                    'bg-gradient-to-r from-yellow-400 to-yellow-500'
+                val >= max * 0.5 ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                  'bg-gradient-to-r from-yellow-400 to-yellow-500'
                 }`}
               style={{ width: `${(val / max) * 100}%` }}
             ></div>
@@ -92,20 +92,40 @@ interface RubricFeedbackItem {
 
 const getCriterionIcon = (criterion: string) => {
   switch (criterion.toLowerCase()) {
+    // Speaking criteria
     case 'content': return 'fa-lightbulb';
     case 'language': return 'fa-language';
     case 'pronunciation': return 'fa-volume-up';
     case 'fluency': return 'fa-water';
+    // Shadowing criteria
+    case 'articulation': return 'fa-microphone';
+    case 'intonation': return 'fa-music';
+    case 'confidence': return 'fa-user-check';
+    // Writing criteria
+    case 'task response': return 'fa-tasks';
+    case 'coherence': return 'fa-link';
+    case 'vocabulary': return 'fa-book';
+    case 'grammar': return 'fa-spell-check';
     default: return 'fa-star';
   }
 };
 
 const getCriterionColor = (criterion: string) => {
   switch (criterion.toLowerCase()) {
+    // Speaking criteria
     case 'content': return { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200', gradient: 'from-purple-400 to-purple-500' };
     case 'language': return { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200', gradient: 'from-blue-400 to-blue-500' };
     case 'pronunciation': return { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200', gradient: 'from-orange-400 to-orange-500' };
     case 'fluency': return { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-200', gradient: 'from-teal-400 to-teal-500' };
+    // Shadowing criteria
+    case 'articulation': return { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', gradient: 'from-red-400 to-red-500' };
+    case 'intonation': return { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-200', gradient: 'from-pink-400 to-pink-500' };
+    case 'confidence': return { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', gradient: 'from-amber-400 to-amber-500' };
+    // Writing criteria
+    case 'task response': return { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200', gradient: 'from-indigo-400 to-indigo-500' };
+    case 'coherence': return { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-200', gradient: 'from-cyan-400 to-cyan-500' };
+    case 'vocabulary': return { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', gradient: 'from-emerald-400 to-emerald-500' };
+    case 'grammar': return { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-200', gradient: 'from-violet-400 to-violet-500' };
     default: return { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200', gradient: 'from-gray-400 to-gray-500' };
   }
 };
@@ -116,7 +136,7 @@ export const RubricFeedbackCard: React.FC<{ rubricFeedback: RubricFeedbackItem[]
       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg">
         <i className="fas fa-clipboard-check"></i>
       </div>
-      Chấm Điểm Chi Tiết Theo Rubric
+      Detailed Rubric Assessment
     </h4>
 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -137,7 +157,7 @@ export const RubricFeedbackCard: React.FC<{ rubricFeedback: RubricFeedbackItem[]
                 </div>
                 <div>
                   <h5 className="font-bold text-gray-800 text-lg">{item.criterion}</h5>
-                  <p className="text-sm text-gray-500">Tiêu chí đánh giá</p>
+                  <p className="text-sm text-gray-500">Assessment Criterion</p>
                 </div>
               </div>
               <div className="text-right">
@@ -165,7 +185,7 @@ export const RubricFeedbackCard: React.FC<{ rubricFeedback: RubricFeedbackItem[]
             {item.suggestions && item.suggestions.length > 0 && (
               <div className="space-y-2">
                 <p className={`text-sm font-bold ${colors.text} uppercase tracking-wide flex items-center gap-2`}>
-                  <i className="fas fa-magic"></i> Gợi Ý Cải Thiện
+                  <i className="fas fa-magic"></i> Improvement Suggestions
                 </p>
                 <ul className="space-y-2">
                   {item.suggestions.map((suggestion, sIdx) => (
@@ -199,11 +219,11 @@ export const DetailedErrorsSection: React.FC<{ errors: DetailedError[] }> = ({ e
 
   const getTypeInfo = (type: string) => {
     switch (type) {
-      case 'grammar': return { icon: 'fa-spell-check', bg: 'bg-red-50', text: 'text-red-600', label: 'Ngữ pháp' };
-      case 'vocabulary': return { icon: 'fa-book', bg: 'bg-blue-50', text: 'text-blue-600', label: 'Từ vựng' };
-      case 'pronunciation': return { icon: 'fa-volume-up', bg: 'bg-orange-50', text: 'text-orange-600', label: 'Phát âm' };
-      case 'coherence': return { icon: 'fa-link', bg: 'bg-purple-50', text: 'text-purple-600', label: 'Mạch lạc' };
-      default: return { icon: 'fa-exclamation-circle', bg: 'bg-gray-50', text: 'text-gray-600', label: 'Khác' };
+      case 'grammar': return { icon: 'fa-spell-check', bg: 'bg-red-50', text: 'text-red-600', label: 'Grammar' };
+      case 'vocabulary': return { icon: 'fa-book', bg: 'bg-blue-50', text: 'text-blue-600', label: 'Vocabulary' };
+      case 'pronunciation': return { icon: 'fa-volume-up', bg: 'bg-orange-50', text: 'text-orange-600', label: 'Pronunciation' };
+      case 'coherence': return { icon: 'fa-link', bg: 'bg-purple-50', text: 'text-purple-600', label: 'Coherence' };
+      default: return { icon: 'fa-exclamation-circle', bg: 'bg-gray-50', text: 'text-gray-600', label: 'Other' };
     }
   };
 
@@ -213,7 +233,7 @@ export const DetailedErrorsSection: React.FC<{ errors: DetailedError[] }> = ({ e
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white shadow-lg">
           <i className="fas fa-exclamation-triangle"></i>
         </div>
-        Các Lỗi Cần Sửa
+        Errors to Correct
       </h4>
 
       <div className="space-y-4">
