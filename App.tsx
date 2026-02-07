@@ -12,7 +12,7 @@ function App() {
    const [activeTab, setActiveTab] = useState<SkillMode>(SkillMode.DASHBOARD);
    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
    const [currentApiKey, setCurrentApiKey] = useState('');
-    const [currentModel, setCurrentModel] = useState('gemini-3-pro-preview');
+   const [currentModel, setCurrentModel] = useState('gemini-3-pro-preview');
 
    // User Progress State
    const [stats, setStats] = useState<UserStats>({
@@ -38,7 +38,7 @@ function App() {
             setCurrentModel(savedModel);
          }
 
-                 handleLogin(savedUser, savedKey, savedModel || 'gemini-3-pro-preview');
+         handleLogin(savedUser, savedKey, savedModel || 'gemini-3-pro-preview');
       }
    }, []);
 

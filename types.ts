@@ -21,6 +21,15 @@ export interface FeedbackItem {
   type: 'grammar' | 'vocabulary' | 'pronunciation' | 'coherence';
 }
 
+// Rubric feedback chi tiết cho từng tiêu chí
+export interface RubricFeedbackItem {
+  criterion: string; // Tên tiêu chí: Content, Language, Pronunciation, Fluency
+  score: number; // Điểm đạt được
+  maxScore: number; // Điểm tối đa
+  feedback: string; // Nhận xét chi tiết cho tiêu chí này
+  suggestions: string[]; // Gợi ý cải thiện
+}
+
 export interface AIResponse {
   score: number;
   scoreBreakdown?: Record<string, number>; // Detailed score criteria
@@ -28,6 +37,7 @@ export interface AIResponse {
   detailedErrors: FeedbackItem[];
   improvedVersion?: string; // For writing
   transcription?: string; // For speaking
+  rubricFeedback?: RubricFeedbackItem[]; // Chi tiết chấm điểm theo rubric
 }
 
 export interface ChatMessage {

@@ -4,13 +4,15 @@ import { AIResponse, ChatMessage, AI_MODELS } from "../types";
 // Allow dynamic API key and model injection
 let appApiKey = process.env.API_KEY || "";
 let appModel = "gemini-3-pro-preview";
-// Fallback sequence: if default fails, try these in order
+
 // Fallback sequence: if default fails, try these in order
 const FALLBACK_MODELS = [
   "gemini-3-pro-preview",
   "gemini-3-flash",
   "gemini-2.5-flash"
 ];
+
+// TTS dedicated model
 const TTS_MODEL = "gemini-2.5-flash-preview-tts";
 
 // Helper for delay in retry logic
@@ -314,7 +316,7 @@ export const gradeSpeakingSession = async (
   const transcript = fullHistory.map(h => `${h.role.toUpperCase()}: ${h.text}`).join("\n");
 
   const prompt = `
-    Act as a Speaking Examiner.
+    Act as a Speaking Examiner. You will provide DETAILED RUBRIC-BASED FEEDBACK.
     Topic: "${topic}".
     
     Here is the full transcript of the interview with the student:
@@ -346,6 +348,12 @@ export const gradeSpeakingSession = async (
     - 0 pts: Very hesitant or silent.
 
     Analyze the transcript (and audio context if available) to determine the score.
+    
+    **IMPORTANT**: For each criterion, you MUST provide:
+    1. A specific score based on the rubric
+    2. Detailed feedback explaining WHY the student received that score (in Vietnamese)
+    3. 2-3 specific suggestions for improvement (in Vietnamese)
+
     Identify any specific errors in pronunciation or grammar from the text provided.
 
     Return the result strictly in this JSON format:
@@ -358,12 +366,42 @@ export const gradeSpeakingSession = async (
          "Pronunciation": number, // Max 2
          "Fluency": number // Max 2
       },
-      "feedback": "string (Overall feedback in Vietnamese or English)",
+      "feedback": "string (Overall feedback in Vietnamese)",
+      "rubricFeedback": [
+        {
+          "criterion": "Content",
+          "score": number,
+          "maxScore": 3,
+          "feedback": "string (Chi tiết đánh giá nội dung câu trả lời, ví dụ: 'Câu trả lời có ý tưởng rõ ràng, có ví dụ minh họa...')",
+          "suggestions": ["Gợi ý cải thiện 1", "Gợi ý cải thiện 2"]
+        },
+        {
+          "criterion": "Language",
+          "score": number,
+          "maxScore": 3,
+          "feedback": "string (Chi tiết đánh giá ngữ pháp và từ vựng)",
+          "suggestions": ["Gợi ý cải thiện 1", "Gợi ý cải thiện 2"]
+        },
+        {
+          "criterion": "Pronunciation",
+          "score": number,
+          "maxScore": 2,
+          "feedback": "string (Chi tiết đánh giá phát âm)",
+          "suggestions": ["Gợi ý cải thiện 1", "Gợi ý cải thiện 2"]
+        },
+        {
+          "criterion": "Fluency",
+          "score": number,
+          "maxScore": 2,
+          "feedback": "string (Chi tiết đánh giá độ lưu loát)",
+          "suggestions": ["Gợi ý cải thiện 1", "Gợi ý cải thiện 2"]
+        }
+      ],
       "detailedErrors": [
         {
           "original": "string (error)",
           "correction": "string (correction)",
-          "explanation": "string (why)",
+          "explanation": "string (why in Vietnamese)",
           "type": "pronunciation" | "grammar" | "vocabulary"
         }
       ]
@@ -400,30 +438,30 @@ export const analyzePronunciation = async (
 ): Promise<AIResponse> => {
 
   const prompt = `
-    Act as a strict pronunciation coach.
+    Act as a strict pronunciation coach. You will provide DETAILED RUBRIC-BASED FEEDBACK in Vietnamese.
     The student is trying to read this specific sentence: "${targetText}".
     Analyze the attached audio recording based on the following rubric (Total 10 points).
 
     **RUBRIC CRITERIA:**
 
-    **1. Articulation (Max 3 points)**
+    **1. Articulation (Phát âm rõ ràng) - Max 3 points**
     - 3 pts: Clear pronunciation, correct ending sounds and difficult sounds.
     - 2 pts: Minor errors but still understandable.
     - 1 pt: Many errors, causing confusion.
     - 0 pts: Severe pronunciation errors.
 
-    **2. Intonation & Stress (Max 3 points)**
+    **2. Intonation & Stress (Ngữ điệu & Trọng âm) - Max 3 points**
     - 3 pts: Correct stress, natural intonation.
     - 2 pts: Some stress but inconsistent.
     - 1 pt: Little stress, monotone.
     - 0 pts: No intonation.
 
-    **3. Fluency & Linking (Max 2 points)**
+    **3. Fluency & Linking (Lưu loát & Nối âm) - Max 2 points**
     - 2 pts: Seamless flow, good linking.
     - 1 pt: Slight pauses.
     - 0 pts: Hesitant, many pauses.
 
-    **4. Confidence & Attitude (Max 2 points)**
+    **4. Confidence & Attitude (Tự tin & Thái độ) - Max 2 points**
     - 2 pts: Confident, clear voice.
     - 1 pt: Slightly shy.
     - 0 pts: Lack of focus/confidence.
@@ -432,6 +470,8 @@ export const analyzePronunciation = async (
     1. Transcribe exactly what the student said.
     2. Score strictly based on the rubric above.
     3. Identify words that were mispronounced, skipped, or added.
+    4. For each criterion, provide detailed feedback in Vietnamese explaining the score.
+    5. For each criterion, provide 2-3 specific suggestions for improvement in Vietnamese.
 
     Return the result strictly in this JSON format:
     {
@@ -443,12 +483,42 @@ export const analyzePronunciation = async (
          "Fluency": number,
          "Confidence": number
       },
-      "feedback": "string (Overall comment on performance)",
+      "feedback": "string (Overall comment in Vietnamese)",
+      "rubricFeedback": [
+        {
+          "criterion": "Articulation",
+          "score": number,
+          "maxScore": 3,
+          "feedback": "string (Chi tiết đánh giá phát âm, ví dụ: 'Học sinh phát âm rõ ràng các âm cuối như /t/, /d/...')",
+          "suggestions": ["Gợi ý cải thiện 1 bằng tiếng Việt", "Gợi ý cải thiện 2"]
+        },
+        {
+          "criterion": "Intonation",
+          "score": number,
+          "maxScore": 3,
+          "feedback": "string (Chi tiết đánh giá ngữ điệu và trọng âm)",
+          "suggestions": ["Gợi ý cải thiện 1", "Gợi ý cải thiện 2"]
+        },
+        {
+          "criterion": "Fluency",
+          "score": number,
+          "maxScore": 2,
+          "feedback": "string (Chi tiết đánh giá độ lưu loát và nối âm)",
+          "suggestions": ["Gợi ý cải thiện 1", "Gợi ý cải thiện 2"]
+        },
+        {
+          "criterion": "Confidence",
+          "score": number,
+          "maxScore": 2,
+          "feedback": "string (Chi tiết đánh giá sự tự tin)",
+          "suggestions": ["Gợi ý cải thiện 1", "Gợi ý cải thiện 2"]
+        }
+      ],
       "detailedErrors": [
         {
           "original": "string (the word they struggled with)",
           "correction": "string (IPA or phonetic spelling)",
-          "explanation": "string (specific advice on how to pronounce this word)",
+          "explanation": "string (specific advice in Vietnamese on how to pronounce this word)",
           "type": "pronunciation"
         }
       ]
