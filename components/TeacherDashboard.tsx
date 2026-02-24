@@ -186,17 +186,17 @@ export const TeacherDashboard: React.FC = () => {
                                     </td>
                                 </tr>
                             )}
-                            {inactiveStudents.slice(0, 5).map((student, idx) => (
-                                <tr key={`inactive-${idx}`} className="opacity-50">
+                            {inactiveStudents.map((student, idx) => (
+                                <tr key={`inactive-${idx}`} className="opacity-50 hover:bg-white/5 transition-colors">
                                     <td className="px-8 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-700 text-slate-500 flex items-center justify-center font-bold text-xs">
+                                            <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-xs border border-white/5">
                                                 {student.name.charAt(0)}
                                             </div>
-                                            <span className="font-medium text-slate-400">{student.name}</span>
+                                            <span className="font-medium text-slate-500">{student.name}</span>
                                         </div>
                                     </td>
-                                    <td colSpan={4} className="px-8 py-4 text-slate-500 text-xs">-</td>
+                                    <td colSpan={4} className="px-8 py-4 text-slate-600 text-xs italic tracking-wider">Waiting for first practice session...</td>
                                 </tr>
                             ))}
                         </tbody>
