@@ -569,6 +569,69 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
     link.click();
   };
 
+  const handleDownloadFeedback = () => {
+    if (!selectedUnit || !finalResult) return;
+
+    const totalScore = partScores.part1 + partScores.part2 + partScores.part3;
+    const today = new Date().toLocaleString();
+
+    let content = `================================================
+ WRITING PRACTICE FEEDBACK - LINGUAAI
+ ================================================
+ 
+ STUDENT: ${studentName}
+ DATE: ${today}
+ UNIT: ${selectedUnit.id} - ${selectedUnit.title}
+ TYPE: ${selectedUnit.type}
+ 
+ ------------------------------------------------
+ 1. OVERALL SCORE: ${totalScore.toFixed(1)} / 10.0
+ ------------------------------------------------
+ - Task 1 (Sentence Scramble): ${partScores.part1} / 2.0
+ - Task 2 (Paragraph Scramble): ${partScores.part2} / 2.0
+ - Task 3 (${selectedUnit.type === 'EMAIL' ? 'Email Writing' : 'Essay Writing'}): ${partScores.part3.toFixed(1)} / 6.0
+ 
+ ------------------------------------------------
+ 2. GENERAL FEEDBACK
+ ------------------------------------------------
+ ${finalResult.feedback || "No feedback available."}
+ 
+ ------------------------------------------------
+ 3. RUBRIC BREAKDOWN
+ ------------------------------------------------
+ `;
+
+    if (finalResult.rubricFeedback) {
+      finalResult.rubricFeedback.forEach(item => {
+        content += `[${item.criterion}]: ${item.score}/${item.max}
+ Feedback: ${item.feedback}
+ `;
+      });
+    }
+
+    if (finalResult.improvedVersion) {
+      content += `
+ ------------------------------------------------
+ 4. IMPROVED VERSION (SUGGESTION)
+ ------------------------------------------------
+ ${finalResult.improvedVersion}
+ `;
+    }
+
+    content += `
+ ================================================
+ DEVELOPED BY TEACHER VO THI THU HA
+ ================================================`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `Writing-Feedback-${studentName}-${selectedUnit.id.replace(/\s+/g, '_')}.txt`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Navigation Helpers
   const handleBackToUnits = () => {
     setSelectedUnit(null);
@@ -680,15 +743,22 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
           {passed ? (
             <div className="space-y-6">
               <p className="text-green-600 font-bold text-xl">🎉 Congratulations! You have completed this writing task excellently.</p>
-              <button
-                onClick={() => {
-                  handleDownloadCertificate();
-                }}
-                className="px-10 py-5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-xl rounded-2xl shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 transform hover:-translate-y-1 transition-all flex items-center gap-3 mx-auto"
-              >
-                <i className="fas fa-certificate text-2xl"></i>
-                Download Certificate
-              </button>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <button
+                  onClick={() => handleDownloadCertificate()}
+                  className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-lg rounded-2xl shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 transform hover:-translate-y-1 transition-all flex items-center gap-3"
+                >
+                  <i className="fas fa-certificate text-xl"></i>
+                  Download Certificate
+                </button>
+                <button
+                  onClick={handleDownloadFeedback}
+                  className="px-8 py-4 bg-white/10 text-white font-bold text-lg rounded-2xl border border-white/20 hover:bg-white/20 transform hover:-translate-y-1 transition-all flex items-center gap-3"
+                >
+                  <i className="fas fa-file-download text-xl text-blue-400"></i>
+                  Download Feedback (.txt)
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">

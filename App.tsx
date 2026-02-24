@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SkillMode, UserStats, AI_MODELS } from './types';
 import Dashboard from './components/Dashboard';
+import { TeacherDashboard } from './components/TeacherDashboard';
 import SpeakingPractice from './components/SpeakingPractice';
 import WritingPractice from './components/WritingPractice';
 import LoginScreen from './components/LoginScreen';
@@ -150,7 +151,9 @@ function App() {
                      {currentUser.charAt(0)}
                   </div>
                   <div className="overflow-hidden">
-                     <p className="text-xs text-blue-400 uppercase font-bold tracking-wider mb-0.5">Student</p>
+                     <p className="text-xs text-blue-400 uppercase font-bold tracking-wider mb-0.5">
+                        {currentUser === 'Nguyen Thi Thu Ha' ? 'Teacher' : 'Student'}
+                     </p>
                      <p className="font-bold text-lg text-white truncate">{currentUser}</p>
                   </div>
                </div>
@@ -237,7 +240,11 @@ function App() {
 
                {/* Content Area */}
                <div className="animate-fade-in-up pb-10 flex-1">
-                  {activeTab === SkillMode.DASHBOARD && <Dashboard stats={stats} />}
+                  {activeTab === SkillMode.DASHBOARD && (
+                     currentUser === 'Nguyen Thi Thu Ha'
+                        ? <TeacherDashboard />
+                        : <Dashboard stats={stats} />
+                  )}
                   {activeTab === SkillMode.SPEAKING && (
                      <SpeakingPractice
                         onComplete={(score) => updateStats(score, 'speaking')}
