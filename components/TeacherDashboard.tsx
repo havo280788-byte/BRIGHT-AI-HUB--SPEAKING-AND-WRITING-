@@ -187,16 +187,19 @@ export const TeacherDashboard: React.FC = () => {
                                 </tr>
                             )}
                             {inactiveStudents.map((student, idx) => (
-                                <tr key={`inactive-${idx}`} className="opacity-50 hover:bg-white/5 transition-colors">
+                                <tr key={`inactive-${idx}`} className="hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
                                     <td className="px-8 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-xs border border-white/5">
+                                            <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-xs border border-white/10">
                                                 {student.name.charAt(0)}
                                             </div>
-                                            <span className="font-medium text-slate-500">{student.name}</span>
+                                            <span className="font-semibold text-white/90">{student.name}</span>
                                         </div>
                                     </td>
-                                    <td colSpan={4} className="px-8 py-4 text-slate-600 text-xs italic tracking-wider">Waiting for first practice session...</td>
+                                    <td colSpan={4} className="px-8 py-4 text-slate-400 text-xs font-bold uppercase tracking-widest italic">
+                                        <i className="fas fa-clock-rotate-left mr-2 opacity-50"></i>
+                                        Pending First Session
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
