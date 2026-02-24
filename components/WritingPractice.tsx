@@ -576,57 +576,95 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
     const today = new Date().toLocaleString();
 
     let content = `================================================
- WRITING PRACTICE FEEDBACK - LINGUAAI
- ================================================
- 
- STUDENT: ${studentName}
- DATE: ${today}
- UNIT: ${selectedUnit.id} - ${selectedUnit.title}
- TYPE: ${selectedUnit.type}
- 
- ------------------------------------------------
- 1. OVERALL SCORE: ${totalScore.toFixed(1)} / 10.0
- ------------------------------------------------
- - Task 1 (Sentence Scramble): ${partScores.part1} / 2.0
- - Task 2 (Paragraph Scramble): ${partScores.part2} / 2.0
- - Task 3 (${selectedUnit.type === 'EMAIL' ? 'Email Writing' : 'Essay Writing'}): ${partScores.part3.toFixed(1)} / 6.0
- 
- ------------------------------------------------
- 2. GENERAL FEEDBACK
- ------------------------------------------------
- ${finalResult.feedback || "No feedback available."}
- 
- ------------------------------------------------
- 3. RUBRIC BREAKDOWN
- ------------------------------------------------
- `;
+WRITING PRACTICE FEEDBACK - LINGUAAI
+================================================
+
+STUDENT: ${studentName}
+DATE: ${today}
+UNIT: ${selectedUnit.id} - ${selectedUnit.title}
+TYPE: ${selectedUnit.type}
+
+------------------------------------------------
+1. OVERALL SCORE: ${totalScore.toFixed(1)} / 10.0
+------------------------------------------------
+- Task 1 (Sentence Scramble): ${partScores.part1} / 2.0
+- Task 2 (Paragraph Scramble): ${partScores.part2} / 2.0
+- Task 3 (${selectedUnit.type === 'EMAIL' ? 'Email Writing' : 'Essay Writing'}): ${partScores.part3.toFixed(1)} / 6.0
+
+`;
+
+    if (finalResult.scoreBreakdown) {
+      content += `------------------------------------------------
+2. SCORE BREAKDOWN
+------------------------------------------------
+`;
+      Object.entries(finalResult.scoreBreakdown).forEach(([key, value]) => {
+        content += `- ${key}: ${value} / 10\n`;
+      });
+      content += `\n`;
+    }
+
+    content += `------------------------------------------------
+3. ORIGINAL TEXT
+------------------------------------------------
+${text || "No text available."}
+
+------------------------------------------------
+4. GENERAL FEEDBACK
+------------------------------------------------
+${finalResult.feedback || "No feedback available."}
+
+------------------------------------------------
+5. RUBRIC BREAKDOWN
+------------------------------------------------
+`;
 
     if (finalResult.rubricFeedback) {
       finalResult.rubricFeedback.forEach(item => {
-        content += `[${item.criterion}]: ${item.score}/${item.max}
- Feedback: ${item.feedback}
- `;
+        content += `[${item.criterion}]: ${item.score}/${item.maxScore}
+Feedback: ${item.feedback}
+`;
+        if (item.suggestions && item.suggestions.length > 0) {
+          content += `Suggestions:\n`;
+          item.suggestions.forEach((s, i) => {
+            content += `  ${i + 1}. ${s}\n`;
+          });
+        }
+        content += `\n`;
+      });
+    }
+
+    if (finalResult.detailedErrors && finalResult.detailedErrors.length > 0) {
+      content += `------------------------------------------------
+6. DETAILED ERRORS & CORRECTIONS
+------------------------------------------------
+`;
+      finalResult.detailedErrors.forEach((error, idx) => {
+        content += `${idx + 1}. TYPE: ${error.type.toUpperCase()}
+   Original: "${error.original}"
+   Correction: "${error.correction}"
+   Explanation: ${error.explanation}
+\n`;
       });
     }
 
     if (finalResult.improvedVersion) {
-      content += `
- ------------------------------------------------
- 4. IMPROVED VERSION (SUGGESTION)
- ------------------------------------------------
- ${finalResult.improvedVersion}
- `;
+      content += `------------------------------------------------
+7. IMPROVED VERSION (SUGGESTION)
+------------------------------------------------
+${finalResult.improvedVersion}
+`;
     }
 
     content += `
- ================================================
- DEVELOPED BY TEACHER VO THI THU HA
- ================================================`;
+================================================
+DEVELOPED BY TEACHER VO THI THU HA
+================================================`;
 
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = `Writing-Feedback-${studentName}-${selectedUnit.id.replace(/\s+/g, '_')}.txt`;
+    link.download = `Writing-Feedback-${studentName}-${selectedUnit.id.toString().replace(/\s+/g, '_')}.txt`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);

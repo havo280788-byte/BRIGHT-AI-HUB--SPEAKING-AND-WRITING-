@@ -599,55 +599,89 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
     const today = new Date().toLocaleString();
 
     let content = `================================================
- SPEAKING PRACTICE FEEDBACK - LINGUAAI
- ================================================
- 
- STUDENT: ${studentName}
- DATE: ${today}
- UNIT: ${selectedUnit.id} - ${selectedUnit.title}
- 
- ------------------------------------------------
- 1. OVERALL SCORE: ${totalScore.toFixed(1)} / 10.0
- ------------------------------------------------
- - Part 1 (Shadowing): ${partScores.part1.toFixed(1)} / 5.0
- - Part 2 (Free Speaking): ${partScores.part2.toFixed(1)} / 5.0
- 
- ------------------------------------------------
- 2. GENERAL FEEDBACK
- ------------------------------------------------
- ${finalResult.feedback || "No feedback available."}
- 
- ------------------------------------------------
- 3. RUBRIC BREAKDOWN
- ------------------------------------------------
- `;
+SPEAKING PRACTICE FEEDBACK - LINGUAAI
+================================================
+
+STUDENT: ${studentName}
+DATE: ${today}
+UNIT: ${selectedUnit.id} - ${selectedUnit.title}
+
+------------------------------------------------
+1. OVERALL SCORE: ${totalScore.toFixed(1)} / 10.0
+------------------------------------------------
+- Part 1 (Shadowing): ${partScores.part1.toFixed(1)} / 5.0
+- Part 2 (Free Speaking): ${partScores.part2.toFixed(1)} / 5.0
+
+`;
+
+    if (finalResult.scoreBreakdown) {
+      content += `------------------------------------------------
+2. SCORE BREAKDOWN
+------------------------------------------------
+`;
+      Object.entries(finalResult.scoreBreakdown).forEach(([key, value]) => {
+        content += `- ${key}: ${value} / 10\n`;
+      });
+      content += `\n`;
+    }
+
+    content += `------------------------------------------------
+3. GENERAL FEEDBACK
+------------------------------------------------
+${finalResult.feedback || "No feedback available."}
+
+------------------------------------------------
+4. RUBRIC BREAKDOWN
+------------------------------------------------
+`;
 
     if (finalResult.rubricFeedback) {
       finalResult.rubricFeedback.forEach(item => {
-        content += `[${item.criterion}]: ${item.score}/${item.max}
- Feedback: ${item.feedback}
- `;
+        content += `[${item.criterion}]: ${item.score}/${item.maxScore}
+Feedback: ${item.feedback}
+`;
+        if (item.suggestions && item.suggestions.length > 0) {
+          content += `Suggestions:\n`;
+          item.suggestions.forEach((s, i) => {
+            content += `  ${i + 1}. ${s}\n`;
+          });
+        }
+        content += `\n`;
+      });
+    }
+
+    if (finalResult.detailedErrors && finalResult.detailedErrors.length > 0) {
+      content += `------------------------------------------------
+5. DETAILED ERRORS & CORRECTIONS
+------------------------------------------------
+`;
+      finalResult.detailedErrors.forEach((error, idx) => {
+        content += `${idx + 1}. TYPE: ${error.type.toUpperCase()}
+   Original: "${error.original}"
+   Correction: "${error.correction}"
+   Explanation: ${error.explanation}
+\n`;
       });
     }
 
     if (finalResult.transcription) {
       content += `
- ------------------------------------------------
- 4. CONVERSATION TRANSCRIPT
- ------------------------------------------------
- ${finalResult.transcription}
- `;
+------------------------------------------------
+6. CONVERSATION TRANSCRIPT
+------------------------------------------------
+${finalResult.transcription}
+`;
     }
 
     content += `
- ================================================
- DEVELOPED BY TEACHER VO THI THU HA
- ================================================`;
+================================================
+DEVELOPED BY TEACHER VO THI THU HA
+================================================`;
 
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = `Speaking-Feedback-${studentName}-${selectedUnit.id.replace(/\s+/g, '_')}.txt`;
+    link.download = `Speaking-Feedback-${studentName}-${selectedUnit.id.toString().replace(/\s+/g, '_')}.txt`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
