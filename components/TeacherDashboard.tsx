@@ -17,6 +17,8 @@ const STUDENTS = [
     "Nguyen Phuong Uyen", "Vu Thi Ha Vy"
 ];
 
+import { getAllStudentStats } from '../services/firebaseService';
+
 interface StudentAggregatedInfo {
     name: string;
     speakingAvg: number | null;
@@ -27,43 +29,71 @@ interface StudentAggregatedInfo {
 
 export const TeacherDashboard: React.FC = () => {
     const [aggregatedData, setAggregatedData] = useState<StudentAggregatedInfo[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const data = STUDENTS.map(name => {
-            const userStatsKey = `lingua_stats_${name.replace(/\s+/g, '_')}`;
-            const storedStats = localStorage.getItem(userStatsKey);
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch all cloud data
+                const cloudRecords = await getAllStudentStats();
+                const cloudMap = new Map(cloudRecords.map(r => [r.name, r.stats]));
 
-            if (storedStats) {
-                const stats: UserStats = JSON.parse(storedStats);
-                const speakingAvg = stats.speakingScore.length > 0
-                    ? stats.speakingScore.reduce((a, b) => a + b, 0) / stats.speakingScore.length
-                    : null;
-                const writingAvg = stats.writingScore.length > 0
-                    ? stats.writingScore.reduce((a, b) => a + b, 0) / stats.writingScore.length
-                    : null;
+                // Merge with predefined STUDENT list to ensure all names are present
+                const data = STUDENTS.map(name => {
+                    const stats = cloudMap.get(name);
 
-                return {
-                    name,
-                    speakingAvg,
-                    writingAvg,
-                    lessonsCompleted: stats.lessonsCompleted,
-                    lastPractice: stats.lastPractice
-                };
+                    if (stats) {
+                        const speakingAvg = stats.speakingScore.length > 0
+                            ? stats.speakingScore.reduce((a, b) => a + b, 0) / stats.speakingScore.length
+                            : null;
+                        const writingAvg = stats.writingScore.length > 0
+                            ? stats.writingScore.reduce((a, b) => a + b, 0) / stats.writingScore.length
+                            : null;
+
+                        return {
+                            name,
+                            speakingAvg,
+                            writingAvg,
+                            lessonsCompleted: stats.lessonsCompleted,
+                            lastPractice: stats.lastPractice
+                        };
+                    }
+
+                    // Fallback for students with no cloud data
+                    return {
+                        name,
+                        speakingAvg: null,
+                        writingAvg: null,
+                        lessonsCompleted: 0,
+                        lastPractice: null
+                    };
+                }).sort((a, b) => b.lessonsCompleted - a.lessonsCompleted);
+
+                setAggregatedData(data);
+            } catch (error) {
+                console.error("Failed to fetch teacher data:", error);
+            } finally {
+                setLoading(false);
             }
-            return {
-                name,
-                speakingAvg: null,
-                writingAvg: null,
-                lessonsCompleted: 0,
-                lastPractice: null
-            };
-        }).sort((a, b) => b.lessonsCompleted - a.lessonsCompleted); // Sort by activity
+        };
 
-        setAggregatedData(data);
+        fetchData();
     }, []);
 
     const activeStudents = aggregatedData.filter(s => s.lessonsCompleted > 0);
     const inactiveStudents = aggregatedData.filter(s => s.lessonsCompleted === 0);
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400 mb-4">
+                    <i className="fas fa-spinner fa-spin text-3xl"></i>
+                </div>
+                <p className="text-slate-400 font-bold text-lg tracking-wide uppercase">Syncing class data...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 animate-fade-in">

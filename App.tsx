@@ -7,6 +7,7 @@ import WritingPractice from './components/WritingPractice';
 import LoginScreen from './components/LoginScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { setApiKey, setModel } from './services/geminiService';
+import { saveUserStats, getUserStats } from './services/firebaseService';
 
 function App() {
    const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -56,22 +57,42 @@ function App() {
       localStorage.setItem('lingua_model', model);
       setCurrentModel(model);
 
-      // Load stats for this specific user
-      const userStatsKey = `lingua_stats_${name.replace(/\s+/g, '_')}`;
-      const storedStats = localStorage.getItem(userStatsKey);
+      // Load stats for this specific user - Try Firebase first
+      const loadStats = async () => {
+         try {
+            const cloudStats = await getUserStats(name);
+            if (cloudStats) {
+               setStats(cloudStats);
+               return;
+            }
 
-      if (storedStats) {
-         setStats(JSON.parse(storedStats));
-      } else {
-         // Reset stats for new user
-         setStats({
-            speakingScore: [],
-            writingScore: [],
-            lessonsCompleted: 0,
-            streak: 1,
-            lastPractice: new Date().toISOString()
-         });
-      }
+            // Fallback to localStorage if cloud is empty
+            const userStatsKey = `lingua_stats_${name.replace(/\s+/g, '_')}`;
+            const storedStats = localStorage.getItem(userStatsKey);
+
+            if (storedStats) {
+               const parsedStats = JSON.parse(storedStats);
+               setStats(parsedStats);
+               // Sync fallback to cloud
+               saveUserStats(name, parsedStats);
+            } else {
+               // Reset stats for new user
+               const initialStats: UserStats = {
+                  speakingScore: [],
+                  writingScore: [],
+                  lessonsCompleted: 0,
+                  streak: 1,
+                  lastPractice: new Date().toISOString()
+               };
+               setStats(initialStats);
+               saveUserStats(name, initialStats);
+            }
+         } catch (error) {
+            console.error("Error loading stats during login:", error);
+         }
+      };
+
+      loadStats();
    };
 
    const handleLogout = () => {
@@ -110,7 +131,10 @@ function App() {
 
       setStats(newStats);
 
-      // Save to specific user key
+      // Save to Firebase (Cloud)
+      saveUserStats(currentUser, newStats).catch(err => console.error("Cloud save failed:", err));
+
+      // Backup to localStorage
       const userStatsKey = `lingua_stats_${currentUser.replace(/\s+/g, '_')}`;
       localStorage.setItem(userStatsKey, JSON.stringify(newStats));
    };
