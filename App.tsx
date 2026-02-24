@@ -130,28 +130,28 @@ function App() {
 
    // --- MAIN APP UI ---
    return (
-      <div className="min-h-screen flex flex-col md:flex-row font-sans text-gray-800">
+      <div className="min-h-screen flex flex-col md:flex-row font-sans text-slate-100 bg-[#0F172A]">
 
          {/* Sidebar / Mobile Header */}
-         <aside className="w-full md:w-80 bg-white/80 backdrop-blur-xl border-r border-white/50 flex-shrink-0 sticky top-0 md:h-screen z-20 flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.03)]">
-            <div className="p-8 flex items-center gap-4 border-b border-gray-100/50">
+         <aside className="w-full md:w-80 bg-slate-900/60 backdrop-blur-2xl border-r border-white/10 flex-shrink-0 sticky top-0 md:h-screen z-20 flex flex-col shadow-2xl">
+            <div className="p-8 flex items-center gap-4 border-b border-white/5">
                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 transform hover:scale-110 transition-transform">
                   <i className="fas fa-shapes text-2xl"></i>
                </div>
                <div>
-                  <h1 className="font-extrabold text-2xl tracking-tight text-gray-900 leading-none">Lingua<span className="text-blue-600">AI</span></h1>
-                  <p className="text-sm text-gray-400 font-semibold tracking-wide mt-1">English Mastery</p>
+                  <h1 className="font-extrabold text-2xl tracking-tight text-white leading-none">Lingua<span className="text-blue-500">AI</span></h1>
+                  <p className="text-sm text-slate-400 font-semibold tracking-wide mt-1">English Mastery</p>
                </div>
             </div>
 
             <div className="px-8 py-6">
-               <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 shadow-sm">
-                  <div className="w-12 h-12 rounded-full bg-white text-blue-700 flex items-center justify-center font-bold text-xl shadow-sm ring-2 ring-white">
+               <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 shadow-sm">
+                  <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-sm ring-2 ring-white/10">
                      {currentUser.charAt(0)}
                   </div>
                   <div className="overflow-hidden">
-                     <p className="text-xs text-blue-500 uppercase font-bold tracking-wider mb-0.5">Student</p>
-                     <p className="font-bold text-lg text-gray-900 truncate">{currentUser}</p>
+                     <p className="text-xs text-blue-400 uppercase font-bold tracking-wider mb-0.5">Student</p>
+                     <p className="font-bold text-lg text-white truncate">{currentUser}</p>
                   </div>
                </div>
             </div>
@@ -162,8 +162,8 @@ function App() {
                      key={item.id}
                      onClick={() => setActiveTab(item.id)}
                      className={`w-full flex items-center gap-5 px-6 py-5 rounded-2xl transition-all duration-300 font-bold text-lg group ${activeTab === item.id
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                        : 'text-gray-500 hover:bg-white hover:shadow-md hover:text-blue-600'
+                        ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
                         }`}
                   >
                      <i className={`fas ${item.icon} w-8 text-center text-xl transition-transform group-hover:scale-110`}></i>
@@ -173,10 +173,10 @@ function App() {
                ))}
             </nav>
 
-            <div className="p-6 border-t border-gray-100/50">
+            <div className="p-6 border-t border-white/5">
                <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-4 px-6 py-4 text-red-500 hover:bg-red-50 rounded-2xl transition-colors font-bold text-lg"
+                  className="w-full flex items-center gap-4 px-6 py-4 text-red-400 hover:bg-red-400/10 rounded-2xl transition-colors font-bold text-lg"
                >
                   <i className="fas fa-sign-out-alt w-8 text-center text-xl"></i>
                   Sign Out
@@ -190,21 +190,21 @@ function App() {
 
                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
                   <div>
-                     <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+                     <h2 className="text-4xl font-extrabold text-white tracking-tight">
                         {navItems.find(n => n.id === activeTab)?.label}
                      </h2>
-                     <p className="text-gray-500 text-lg mt-2">Welcome back, <span className="font-bold text-blue-600">{currentUser}</span>! Ready to learn?</p>
+                     <p className="text-slate-400 text-lg mt-2">Welcome back, <span className="font-bold text-blue-400">{currentUser}</span>! Ready to learn?</p>
                   </div>
 
                   {/* Header Actions */}
                   <div className="flex items-center gap-4">
                      {/* Connection Status */}
-                     <div className="hidden md:flex px-5 py-2.5 bg-white rounded-full border border-gray-200 shadow-sm items-center gap-3">
+                     <div className="hidden md:flex px-5 py-2.5 bg-white/5 rounded-full border border-white/10 shadow-sm items-center gap-3">
                         <div className="relative flex h-3 w-3">
                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                         </div>
-                        <span className="text-sm font-bold text-gray-700">Connected</span>
+                        <span className="text-sm font-bold text-slate-300">Connected</span>
                      </div>
 
                      {/* Settings Button */}
@@ -212,7 +212,7 @@ function App() {
                         onClick={() => setIsSettingsOpen(true)}
                         className="flex flex-col items-end group"
                      >
-                        <div className="w-12 h-12 rounded-full bg-white border border-gray-200 shadow-sm hover:shadow-md flex items-center justify-center text-gray-600 transition-all group-hover:border-blue-300 group-hover:text-blue-600">
+                        <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 shadow-sm hover:shadow-md flex items-center justify-center text-slate-400 transition-all group-hover:border-blue-500/50 group-hover:text-blue-400">
                            <i className="fas fa-cog text-xl"></i>
                         </div>
                         {(!currentApiKey || currentApiKey.length < 10) && (
@@ -253,7 +253,7 @@ function App() {
                </div>
 
                {/* Footer */}
-               <footer className="py-6 text-center text-orange-600 text-xs font-bold uppercase tracking-widest border-t border-gray-100/50 mt-auto">
+               <footer className="py-6 text-center text-blue-400 text-xs font-bold uppercase tracking-widest border-t border-white/5 mt-auto">
                   DEVELOPED BY TEACHER VO THI THU HA - TRAN HUNG DAO HIGH SCHOOL - LAM DONG
                </footer>
             </div>

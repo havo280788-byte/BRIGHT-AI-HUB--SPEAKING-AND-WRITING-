@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button, Card, ScoreCircle, ScoreBreakdown, RubricFeedbackCard, DetailedErrorsSection } from './Components';
 import { analyzePronunciation, interactWithExaminer, gradeSpeakingSession, generateSpeech } from '../services/geminiService';
 import { AIResponse, ChatMessage } from '../types';
@@ -233,6 +233,8 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
   // --- Score Tracking ---
   const [partScores, setPartScores] = useState({ part1: 0, part2: 0 });
   const [partCompletion, setPartCompletion] = useState({ part1: false, part2: false });
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const partScoresRef = useRef({ part1: 0, part2: 0 });
 
   // Shadowing State
   const [currentSentenceIdx, setCurrentSentenceIdx] = useState(0);
@@ -269,6 +271,20 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    partScoresRef.current = partScores;
+  }, [partScores]);
+
+  // Auto-save score when entering SUMMARY mode
+  useEffect(() => {
+    if (practiceMode === 'SUMMARY' && !scoreSubmitted) {
+      const totalScore = partScoresRef.current.part1 + partScoresRef.current.part2;
+      onComplete(totalScore);
+      setScoreSubmitted(true);
+    }
+  }, [practiceMode, scoreSubmitted, onComplete]);
 
   // Auto-start Free Speaking Session
   useEffect(() => {
@@ -481,7 +497,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
         setPartCompletion(prev => ({ ...prev, part2: true }));
 
         setPracticeMode('SUMMARY');
-        onComplete((partScores.part1 + scaledScore)); // Update global stats
+        // onComplete will be called automatically by the useEffect above
       }
 
     } catch (error: any) {
@@ -590,6 +606,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
     setTurnCount(0);
     setPartScores({ part1: 0, part2: 0 });
     setPartCompletion({ part1: false, part2: false });
+    setScoreSubmitted(false);
   };
 
   const handleBackToMode = () => {
@@ -602,23 +619,23 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
   if (!selectedUnit) {
     return (
       <div className="space-y-8 animate-fade-in">
-        <h2 className="text-3xl font-extrabold text-gray-900 mb-6">Select a Speaking Unit</h2>
+        <h2 className="text-3xl font-extrabold text-white mb-6">Select a Speaking Unit</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {UNITS.map((unit) => (
             <button
               key={unit.id}
               onClick={() => setSelectedUnit(unit)}
-              className="group bg-white rounded-[2rem] p-8 shadow-soft border border-gray-100 hover:shadow-2xl hover:border-blue-300 transition-all text-left flex gap-6 items-start relative overflow-hidden transform hover:-translate-y-1"
+              className="group bg-white/5 rounded-[2rem] p-8 shadow-2xl border border-white/10 hover:border-blue-500/50 transition-all text-left flex gap-6 items-start relative overflow-hidden transform hover:-translate-y-1 backdrop-blur-xl"
             >
               <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${unit.color} flex items-center justify-center text-white shadow-lg shrink-0`}>
                 <i className={`fas ${unit.icon} text-3xl`}></i>
               </div>
               <div className="z-10 flex-1">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Unit {unit.id}</span>
-                <h3 className="text-2xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors mt-1 mb-2">{unit.title}</h3>
-                <p className="text-lg text-gray-500 mt-2 line-clamp-2 leading-relaxed">{unit.description}</p>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Unit {unit.id}</span>
+                <h3 className="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors mt-1 mb-2">{unit.title}</h3>
+                <p className="text-lg text-slate-400 mt-2 line-clamp-2 leading-relaxed">{unit.description}</p>
               </div>
-              <div className="absolute right-0 bottom-0 opacity-5 transform translate-x-4 translate-y-4 group-hover:scale-110 transition-transform">
+              <div className="absolute right-0 bottom-0 opacity-[0.03] transform translate-x-4 translate-y-4 group-hover:scale-110 transition-transform">
                 <i className={`fas ${unit.icon} text-9xl`}></i>
               </div>
             </button>
@@ -635,45 +652,45 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
     return (
       <div className="max-w-6xl mx-auto space-y-8 animate-fade-in-up">
-        <button onClick={handleBackToMode} className="text-gray-500 hover:text-blue-600 font-bold text-lg transition-colors flex items-center mb-4">
+        <button onClick={handleBackToMode} className="text-slate-400 hover:text-blue-400 font-bold text-lg transition-colors flex items-center mb-4">
           <i className="fas fa-arrow-left mr-3"></i> Back to Menu
         </button>
 
         {/* Score Summary Card */}
-        <Card className="text-center py-12">
-          <div className={`w-28 h-28 mx-auto rounded-full flex items-center justify-center text-5xl mb-6 shadow-2xl ${passed ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+        <Card className="text-center py-12 bg-white/5 border-white/10 shadow-2xl backdrop-blur-2xl">
+          <div className={`w-28 h-28 mx-auto rounded-full flex items-center justify-center text-5xl mb-6 shadow-2xl ${passed ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
             <i className={`fas ${passed ? 'fa-trophy' : 'fa-clipboard-check'}`}></i>
           </div>
 
-          <h2 className="text-4xl font-extrabold text-gray-900 mb-2">Unit Complete!</h2>
-          <p className="text-xl text-gray-500 mb-8">Here is your speaking result</p>
+          <h2 className="text-4xl font-extrabold text-white mb-2">Unit Complete!</h2>
+          <p className="text-xl text-slate-400 mb-8">Here is your speaking result</p>
 
           <div className="grid grid-cols-2 gap-6 max-w-2xl mx-auto mb-10">
-            <div className="bg-purple-50 p-6 rounded-3xl border border-purple-100 shadow-sm">
-              <div className="text-sm text-purple-600 font-bold uppercase mb-2 tracking-wide">Part 1 (Shadowing)</div>
-              <div className="text-4xl font-extrabold text-gray-800">{partScores.part1.toFixed(1)}<span className="text-xl text-gray-400">/5</span></div>
+            <div className="bg-purple-500/10 p-6 rounded-3xl border border-purple-500/20 shadow-sm">
+              <div className="text-sm text-purple-400 font-bold uppercase mb-2 tracking-wide">Part 1 (Shadowing)</div>
+              <div className="text-4xl font-extrabold text-white">{partScores.part1.toFixed(1)}<span className="text-xl text-slate-500">/5</span></div>
             </div>
-            <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 shadow-sm">
-              <div className="text-sm text-blue-600 font-bold uppercase mb-2 tracking-wide">Part 2 (Free Speaking)</div>
-              <div className="text-4xl font-extrabold text-gray-800">{partScores.part2.toFixed(1)}<span className="text-xl text-gray-400">/5</span></div>
+            <div className="bg-blue-500/10 p-6 rounded-3xl border border-blue-500/20 shadow-sm">
+              <div className="text-sm text-blue-400 font-bold uppercase mb-2 tracking-wide">Part 2 (Free Speaking)</div>
+              <div className="text-4xl font-extrabold text-white">{partScores.part2.toFixed(1)}<span className="text-xl text-slate-500">/5</span></div>
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-3xl p-8 max-w-lg mx-auto mb-8 border border-gray-200">
-            <p className="text-gray-500 font-bold uppercase tracking-widest text-sm mb-3">Total Score</p>
-            <div className="text-7xl font-black text-gray-900 tracking-tight">{totalScore.toFixed(1)}<span className="text-3xl text-gray-400 font-normal">/10</span></div>
+          <div className="bg-white/5 rounded-3xl p-8 max-w-lg mx-auto mb-8 border border-white/5 shadow-inner">
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-sm mb-3">Total Score</p>
+            <div className="text-7xl font-black text-white tracking-tight">{totalScore.toFixed(1)}<span className="text-3xl text-slate-500 font-normal">/10</span></div>
           </div>
 
           {/* General Feedback */}
           {finalResult?.feedback && (
-            <div className="max-w-2xl mx-auto mb-8 bg-blue-50 rounded-2xl p-6 border border-blue-100">
+            <div className="max-w-2xl mx-auto mb-8 bg-blue-500/10 rounded-2xl p-6 border border-blue-500/20">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0">
                   <i className="fas fa-comment-dots text-xl"></i>
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-blue-800 mb-2">General Feedback</p>
-                  <p className="text-gray-700 leading-relaxed">{finalResult.feedback}</p>
+                  <p className="font-bold text-blue-400 mb-2">General Feedback</p>
+                  <p className="text-slate-300 leading-relaxed">{finalResult.feedback}</p>
                 </div>
               </div>
             </div>
@@ -723,9 +740,9 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
         {/* Transcript Section */}
         {finalResult?.transcription && (
-          <Card title="Conversation Transcript">
-            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-              <pre className="whitespace-pre-wrap text-gray-700 font-mono text-sm leading-relaxed">
+          <Card title="Conversation Transcript" className="bg-white/5 border-white/10 shadow-2xl backdrop-blur-2xl">
+            <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
+              <pre className="whitespace-pre-wrap text-slate-300 font-mono text-sm leading-relaxed">
                 {finalResult.transcription}
               </pre>
             </div>
@@ -749,36 +766,36 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
   if (practiceMode === 'MENU') {
     return (
       <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-        <button onClick={handleBackToUnits} className="text-gray-500 hover:text-blue-600 font-bold text-lg transition-colors flex items-center mb-4">
+        <button onClick={handleBackToUnits} className="text-slate-400 hover:text-blue-400 font-bold text-lg transition-colors flex items-center mb-4">
           <i className="fas fa-arrow-left mr-3"></i> Back to Units
         </button>
 
         <div className="text-center mb-10">
-          <h2 className="text-4xl font-extrabold text-gray-900 mb-2">{selectedUnit.title}</h2>
-          <p className="text-xl text-gray-500">Complete both parts to get your score</p>
+          <h2 className="text-4xl font-extrabold text-white mb-2">{selectedUnit.title}</h2>
+          <p className="text-xl text-slate-400">Complete both parts to get your score</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div onClick={() => { setPracticeMode('SHADOWING'); setCurrentSentenceIdx(0); }} className={`cursor-pointer bg-white p-10 rounded-[2rem] shadow-soft border transition-all group transform hover:-translate-y-1 relative overflow-hidden ${partCompletion.part1 ? 'border-green-300 bg-green-50/30' : 'border-gray-100 hover:shadow-2xl hover:border-purple-200'}`}>
+          <div onClick={() => { setPracticeMode('SHADOWING'); setCurrentSentenceIdx(0); }} className={`cursor-pointer bg-white/5 p-10 rounded-[2rem] shadow-2xl border transition-all group transform hover:-translate-y-1 relative overflow-hidden backdrop-blur-xl ${partCompletion.part1 ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-purple-500/50'}`}>
             {partCompletion.part1 && <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl shadow-sm"><i className="fas fa-check mr-1"></i> Done</div>}
-            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part1 ? 'bg-green-100 text-green-600' : 'bg-purple-100 text-purple-600'}`}>
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part1 ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'}`}>
               <i className="fas fa-microphone-lines"></i>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">Part 1: Shadowing</h3>
-            <p className="text-gray-600 text-lg mb-6">Listen and mimic sentences. Max 5 points.</p>
-            <div className={`font-bold text-base uppercase tracking-wider ${partCompletion.part1 ? 'text-green-600' : 'text-purple-600'}`}>
+            <h3 className="text-2xl font-bold text-white mb-3">Part 1: Shadowing</h3>
+            <p className="text-slate-400 text-lg mb-6">Listen and mimic sentences. Max 5 points.</p>
+            <div className={`font-bold text-base uppercase tracking-wider ${partCompletion.part1 ? 'text-green-400' : 'text-purple-400'}`}>
               {partCompletion.part1 ? 'Redo Part 1' : 'Start Practice'} <i className="fas fa-arrow-right ml-1"></i>
             </div>
           </div>
 
-          <div onClick={() => setPracticeMode('FREE_SPEAKING')} className={`cursor-pointer bg-white p-10 rounded-[2rem] shadow-soft border transition-all group transform hover:-translate-y-1 relative overflow-hidden ${partCompletion.part2 ? 'border-green-300 bg-green-50/30' : 'border-gray-100 hover:shadow-2xl hover:border-blue-200'}`}>
+          <div onClick={() => setPracticeMode('FREE_SPEAKING')} className={`cursor-pointer bg-white/5 p-10 rounded-[2rem] shadow-2xl border transition-all group transform hover:-translate-y-1 relative overflow-hidden backdrop-blur-xl ${partCompletion.part2 ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-blue-500/50'}`}>
             {partCompletion.part2 && <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl shadow-sm"><i className="fas fa-check mr-1"></i> Done</div>}
-            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part2 ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part2 ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
               <i className="fas fa-comments"></i>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">Part 2: Free Speaking</h3>
-            <p className="text-gray-600 text-lg mb-6">Conversation with AI (5 turns). Max 5 points.</p>
-            <div className={`font-bold text-base uppercase tracking-wider ${partCompletion.part2 ? 'text-green-600' : 'text-blue-600'}`}>
+            <h3 className="text-2xl font-bold text-white mb-3">Part 2: Free Speaking</h3>
+            <p className="text-slate-400 text-lg mb-6">Conversation with AI (5 turns). Max 5 points.</p>
+            <div className={`font-bold text-base uppercase tracking-wider ${partCompletion.part2 ? 'text-green-400' : 'text-blue-400'}`}>
               {partCompletion.part2 ? 'Redo Part 2' : 'Start Practice'} <i className="fas fa-arrow-right ml-1"></i>
             </div>
           </div>
@@ -806,17 +823,17 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
   if (practiceMode === 'SHADOWING') {
     return (
       <div className="max-w-4xl mx-auto space-y-8">
-        <button onClick={handleBackToMode} className="flex items-center text-gray-500 hover:text-blue-600 font-bold text-lg transition-colors">
+        <button onClick={handleBackToMode} className="flex items-center text-slate-400 hover:text-blue-400 font-bold text-lg transition-colors">
           <i className="fas fa-arrow-left mr-3"></i> Back to Menu
         </button>
 
-        <Card title={`Part 1: Shadowing - Sentence ${currentSentenceIdx + 1}/${selectedUnit.shadowingSentences.length}`}>
+        <Card title={`Part 1: Shadowing - Sentence ${currentSentenceIdx + 1}/${selectedUnit.shadowingSentences.length}`} className="bg-white/5 border-white/10 shadow-2xl backdrop-blur-2xl">
           <div className="flex flex-col items-center justify-center space-y-10 py-10">
             {!result ? (
               <>
                 <div className="text-center space-y-6 max-w-3xl px-6">
-                  <p className="text-gray-400 text-sm uppercase tracking-widest font-bold">Read this aloud</p>
-                  <h3 className="text-3xl md:text-5xl font-extrabold text-gray-900 leading-tight tracking-tight">
+                  <p className="text-slate-500 text-sm uppercase tracking-widest font-bold">Read this aloud</p>
+                  <h3 className="text-3xl md:text-5xl font-extrabold text-white leading-tight tracking-tight">
                     "{selectedUnit.shadowingSentences[currentSentenceIdx]}"
                   </h3>
 
@@ -824,7 +841,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
                   <button
                     onClick={handlePlaySample}
                     disabled={isPlayingSample}
-                    className="mx-auto flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-600 rounded-full font-bold text-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+                    className="mx-auto flex items-center gap-3 px-6 py-3 bg-blue-500/10 text-blue-400 rounded-full font-bold text-lg hover:bg-blue-500/20 transition-colors disabled:opacity-50"
                   >
                     {isPlayingSample ? (
                       <>
@@ -841,14 +858,14 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
                     <button
                       disabled={currentSentenceIdx === 0}
                       onClick={() => { setCurrentSentenceIdx(p => p - 1); resetSession(); }}
-                      className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-gray-600 transition-colors"
+                      className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-400 transition-colors border border-white/5"
                     >
                       <i className="fas fa-chevron-left"></i>
                     </button>
                     <button
                       disabled={currentSentenceIdx === selectedUnit.shadowingSentences.length - 1}
                       onClick={() => { setCurrentSentenceIdx(p => p + 1); resetSession(); }}
-                      className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-gray-600 transition-colors"
+                      className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-400 transition-colors border border-white/5"
                     >
                       <i className="fas fa-chevron-right"></i>
                     </button>
@@ -870,13 +887,13 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
                     <i className={`fas ${isRecording ? 'fa-stop' : 'fa-microphone'}`}></i>
                   </button>
                 </div>
-                <div className="text-3xl font-mono text-gray-500 font-bold tracking-widest bg-gray-100 px-4 py-1 rounded-lg">
+                <div className="text-3xl font-mono text-slate-400 font-bold tracking-widest bg-white/5 px-4 py-1 rounded-lg border border-white/5">
                   {formatTime(timer)}
                 </div>
 
                 {audioUrl && !isRecording && (
-                  <div className="w-full max-w-lg bg-gray-50 p-6 rounded-[2rem] flex flex-col gap-6 shadow-inner border border-gray-100">
-                    <audio src={audioUrl} controls className="w-full h-12" />
+                  <div className="w-full max-w-lg bg-black/20 p-6 rounded-[2rem] flex flex-col gap-6 shadow-inner border border-white/5">
+                    <audio src={audioUrl} controls className="w-full h-12 invert opacity-70" />
                     <div className="flex justify-center gap-4">
                       <Button variant="secondary" onClick={resetSession}>
                         <i className="fas fa-trash mr-2"></i> Retry
@@ -893,18 +910,18 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
               <div className="w-full space-y-8 animate-fade-in">
                 <div className="flex flex-col items-center">
                   <ScoreCircle score={(result.score / 10) * 5} />
-                  <p className="mt-4 text-gray-500 font-bold uppercase">Pronunciation Score (Scaled to 5.0)</p>
-                  <div className="text-4xl font-extrabold text-gray-800 mt-2">{(result.score / 10 * 5).toFixed(1)}<span className="text-xl text-gray-400">/5</span></div>
+                  <p className="mt-4 text-slate-500 font-bold uppercase">Pronunciation Score (Scaled to 5.0)</p>
+                  <div className="text-4xl font-extrabold text-white mt-2">{(result.score / 10 * 5).toFixed(1)}<span className="text-xl text-slate-500">/5</span></div>
 
                   {/* General Feedback */}
-                  <div className="mt-6 max-w-2xl bg-blue-50 rounded-2xl p-5 border border-blue-100">
+                  <div className="mt-6 max-w-2xl bg-blue-500/10 rounded-2xl p-5 border border-blue-500/20">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0">
                         <i className="fas fa-comment-dots"></i>
                       </div>
                       <div className="text-left">
-                        <p className="font-bold text-blue-800 mb-1">General Feedback</p>
-                        <p className="text-gray-700 leading-relaxed">{result.feedback}</p>
+                        <p className="font-bold text-blue-400 mb-1">General Feedback</p>
+                        <p className="text-slate-300 leading-relaxed">{result.feedback}</p>
                       </div>
                     </div>
                   </div>
@@ -920,8 +937,8 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
                 {/* Score Breakdown */}
                 {result.scoreBreakdown && (
                   <div className="mt-6">
-                    <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      <i className="fas fa-chart-bar text-blue-500"></i> Score Breakdown
+                    <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      <i className="fas fa-chart-bar text-blue-400"></i> Score Breakdown
                     </h4>
                     <ScoreBreakdown breakdown={result.scoreBreakdown} max={3} />
                   </div>
@@ -954,42 +971,42 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
   return (
     <div className="max-w-5xl mx-auto h-[calc(100vh-160px)] flex flex-col">
       <div className="flex justify-between items-center mb-6 flex-shrink-0">
-        <button onClick={handleBackToMode} className="flex items-center text-gray-500 hover:text-blue-600 font-bold text-lg transition-colors">
+        <button onClick={handleBackToMode} className="flex items-center text-slate-400 hover:text-blue-400 font-bold text-lg transition-colors">
           <i className="fas fa-arrow-left mr-3"></i> Back to Menu
         </button>
-        <div className="bg-blue-100 px-4 py-2 rounded-full text-blue-800 text-sm font-bold shadow-sm border border-blue-200">
+        <div className="bg-blue-500/10 px-4 py-2 rounded-full text-blue-400 text-sm font-bold shadow-sm border border-blue-500/20 backdrop-blur-md">
           Turn {turnCount}/{MAX_TURNS}
         </div>
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto bg-white rounded-t-[2.5rem] shadow-soft border border-gray-100 p-8 space-y-8 relative custom-scrollbar">
+      <div className="flex-1 overflow-y-auto bg-slate-900/40 rounded-t-[2.5rem] shadow-2xl border border-white/10 p-8 space-y-8 relative custom-scrollbar backdrop-blur-xl">
         {chatHistory.length === 0 && isAnalyzing && (
           <div className="flex justify-center items-center h-full">
-            <div className="flex flex-col items-center text-gray-400">
-              <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+            <div className="flex flex-col items-center text-slate-500">
+              <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
                 <i className="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i>
               </div>
-              <p className="text-lg font-medium">Examiner is preparing the first question...</p>
+              <p className="text-lg font-medium text-slate-400">Examiner is preparing the first question...</p>
             </div>
           </div>
         )}
 
         {chatHistory.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}>
-            <div className={`max-w-[85%] rounded-[2rem] p-6 shadow-md transition-all ${msg.role === 'ai'
-              ? 'bg-gray-50 border border-gray-100 rounded-tl-none text-gray-800'
+            <div className={`max-w-[85%] rounded-[2rem] p-6 shadow-lg transition-all ${msg.role === 'ai'
+              ? 'bg-white/5 border border-white/5 rounded-tl-none text-white'
               : 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-tr-none'
               }`}>
               {msg.role === 'ai' && (
-                <div className="text-xs font-bold text-gray-400 mb-2 flex items-center gap-2 uppercase tracking-wide">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><i className="fas fa-robot"></i></div>
+                <div className="text-xs font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wide">
+                  <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400"><i className="fas fa-robot"></i></div>
                   Examiner
                 </div>
               )}
               <p className="text-lg md:text-xl leading-relaxed font-medium">{msg.text}</p>
               {msg.audioUrl && (
-                <audio src={msg.audioUrl} controls autoPlay className="mt-4 h-10 w-full max-w-[240px] opacity-90 hover:opacity-100 transition-opacity" />
+                <audio src={msg.audioUrl} controls autoPlay className={`mt-4 h-10 w-full max-w-[240px] opacity-90 hover:opacity-100 transition-opacity ${msg.role === 'ai' ? 'invert brightness-125' : ''}`} />
               )}
             </div>
           </div>
@@ -997,11 +1014,11 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
         {isAnalyzing && chatHistory.length > 0 && (
           <div className="flex justify-start animate-pulse">
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-none p-5 text-gray-500 text-base flex items-center gap-3">
+            <div className="bg-white/5 border border-white/5 rounded-2xl rounded-tl-none p-5 text-slate-400 text-base flex items-center gap-3">
               <span className="flex gap-1.5">
-                <span className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"></span>
-                <span className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
-                <span className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+                <span className="w-2.5 h-2.5 bg-blue-500/50 rounded-full animate-bounce"></span>
+                <span className="w-2.5 h-2.5 bg-blue-500/50 rounded-full animate-bounce delay-75"></span>
+                <span className="w-2.5 h-2.5 bg-blue-500/50 rounded-full animate-bounce delay-150"></span>
               </span>
               Examiner is thinking...
             </div>
@@ -1011,14 +1028,14 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
       </div>
 
       {/* Input Area (Recording) */}
-      <div className="bg-white p-6 border-t border-gray-100 rounded-b-[2.5rem] shadow-lg flex flex-col gap-4 flex-shrink-0 z-10">
+      <div className="bg-slate-900/60 p-6 border-t border-white/10 rounded-b-[2.5rem] shadow-2xl flex flex-col gap-4 flex-shrink-0 z-10 backdrop-blur-xl">
 
         {/* Hint Display */}
         {selectedUnit.freeSpeakingQuestions && turnCount < MAX_TURNS && !isRecording && !audioUrl && (
-          <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-2xl text-base text-yellow-900 flex items-start gap-3 animate-fade-in shadow-sm">
-            <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 shrink-0"><i className="fas fa-lightbulb"></i></div>
+          <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl text-base text-blue-200 flex items-start gap-3 animate-fade-in shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 shrink-0"><i className="fas fa-lightbulb"></i></div>
             <div className="py-1">
-              <span className="font-bold">Suggestion:</span> {selectedUnit.freeSpeakingQuestions[turnCount].hint}
+              <span className="font-bold text-blue-300">Suggestion:</span> {selectedUnit.freeSpeakingQuestions[turnCount].hint}
             </div>
           </div>
         )}
@@ -1032,8 +1049,8 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
             </div>
           ) : (
             <>
-              <div className="text-base font-medium text-gray-500">
-                {isRecording ? <span className="text-red-500 animate-pulse font-bold flex items-center gap-2"><i className="fas fa-circle text-xs"></i> Recording {formatTime(timer)}</span> : 'Tap microphone to answer'}
+              <div className="text-base font-medium text-slate-500">
+                {isRecording ? <span className="text-red-400 animate-pulse font-bold flex items-center gap-2"><i className="fas fa-circle text-xs"></i> Recording {formatTime(timer)}</span> : 'Tap microphone to answer'}
               </div>
 
               <div className="flex gap-4 items-center">

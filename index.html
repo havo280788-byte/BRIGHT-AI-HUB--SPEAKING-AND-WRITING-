@@ -18,12 +18,14 @@
             },
             colors: {
               primary: '#3B82F6',
-              secondary: '#F59E0B',
-              accent: '#F3F4F6',
+              secondary: '#101827', // Deep Navy
+              accent: '#3B82F6',
+              'dark-bg': '#0F172A', // Slate 900
+              'glass-bg': 'rgba(30, 41, 59, 0.4)',
             },
             boxShadow: {
-              'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
-              'glow': '0 0 20px rgba(59, 130, 246, 0.5)'
+              'soft': '0 10px 40px -10px rgba(0,0,0,0.3)',
+              'glow': '0 0 20px rgba(59, 130, 246, 0.4)'
             }
           }
         }
@@ -32,12 +34,12 @@
     <style>
       body {
         font-family: 'Be Vietnam Pro', sans-serif;
-        background-color: #F0F4F8;
+        background-color: #0F172A;
         background-image: 
-          radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
-          radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.1) 0px, transparent 50%);
+          radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+          radial-gradient(at 100% 0%, rgba(79, 70, 229, 0.15) 0px, transparent 50%);
         background-attachment: fixed;
-        color: #1e293b;
+        color: #f1f5f9;
         font-size: 17px; /* Increased base font size */
         -webkit-font-smoothing: antialiased;
       }
@@ -50,18 +52,19 @@
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: #334155;
         border-radius: 6px;
-        border: 2px solid #F0F4F8;
+        border: 2px solid #0F172A;
       }
       ::-webkit-scrollbar-thumb:hover {
         background: #94a3b8;
       }
 
       .glass {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
       
       .animate-fade-in-up {

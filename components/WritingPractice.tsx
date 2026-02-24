@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Card, ScoreCircle, ScoreBreakdown, RubricFeedbackCard, DetailedErrorsSection } from './Components';
 import { analyzeWriting } from '../services/geminiService';
 import { AIResponse } from '../types';
@@ -305,6 +305,8 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
   // --- Tracking Scores & Completion ---
   const [partScores, setPartScores] = useState({ part1: 0, part2: 0, part3: 0 });
   const [partCompletion, setPartCompletion] = useState({ part1: false, part2: false, part3: false });
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const partScoresRef = useRef({ part1: 0, part2: 0, part3: 0 });
 
   // --- Part 1: Sentence Scramble State ---
   const [scrambleIdx, setScrambleIdx] = useState(0);
@@ -336,6 +338,20 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
       loadScrambleParagraph();
     }
   }, [practiceMode, selectedUnit]);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    partScoresRef.current = partScores;
+  }, [partScores]);
+
+  // Auto-save score when entering SUMMARY mode
+  useEffect(() => {
+    if (practiceMode === 'SUMMARY' && !scoreSubmitted) {
+      const totalScore = partScoresRef.current.part1 + partScoresRef.current.part2 + partScoresRef.current.part3;
+      onComplete(totalScore);
+      setScoreSubmitted(true);
+    }
+  }, [practiceMode, scoreSubmitted, onComplete]);
 
   // --- PART 1 LOGIC ---
   const loadScrambleSentence = (idx: number) => {
@@ -572,28 +588,29 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
     setParaStatus('idle');
     setPartScores({ part1: 0, part2: 0, part3: 0 });
     setPartCompletion({ part1: false, part2: false, part3: false });
+    setScoreSubmitted(false);
   };
 
   // --- 1. UNIT SELECTION VIEW ---
   if (!selectedUnit) {
     return (
       <div className="space-y-8 animate-fade-in">
-        <h2 className="text-3xl font-extrabold text-gray-900 mb-6">Select a Writing Unit</h2>
+        <h2 className="text-3xl font-extrabold text-white mb-6">Select a Writing Unit</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {WRITING_UNITS.map((unit) => (
             <button
               key={unit.id}
               onClick={() => setSelectedUnit(unit)}
-              className="group bg-white rounded-[2rem] p-8 shadow-soft border border-gray-100 hover:shadow-2xl hover:border-blue-300 transition-all text-left flex gap-6 items-start relative overflow-hidden transform hover:-translate-y-1"
+              className="group bg-white/5 rounded-[2rem] p-8 shadow-2xl border border-white/10 hover:border-blue-500/50 transition-all text-left flex gap-6 items-start relative overflow-hidden transform hover:-translate-y-1 backdrop-blur-xl"
             >
               <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${unit.color} flex items-center justify-center text-white shadow-lg shrink-0 group-hover:scale-110 transition-transform`}>
                 <i className={`fas ${unit.icon} text-3xl`}></i>
               </div>
               <div className="z-10 flex-1">
-                <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Unit {unit.id}</span>
-                <h3 className="text-2xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors mt-1 mb-2">{unit.title}</h3>
-                <p className="text-base text-gray-500 line-clamp-2 leading-relaxed">{unit.description}</p>
-                <div className={`inline-flex items-center gap-2 mt-4 text-xs font-bold px-3 py-1.5 rounded-full border ${unit.type === 'EMAIL' ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
+                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Unit {unit.id}</span>
+                <h3 className="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors mt-1 mb-2">{unit.title}</h3>
+                <p className="text-base text-slate-400 line-clamp-2 leading-relaxed">{unit.description}</p>
+                <div className={`inline-flex items-center gap-2 mt-4 text-xs font-bold px-3 py-1.5 rounded-full border ${unit.type === 'EMAIL' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                   <i className={`fas ${unit.type === 'EMAIL' ? 'fa-envelope' : 'fa-pen-nib'}`}></i>
                   {unit.type === 'EMAIL' ? 'Email Writing' : 'Essay Writing'}
                 </div>
@@ -612,49 +629,49 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
     return (
       <div className="max-w-6xl mx-auto space-y-8 animate-fade-in-up">
-        <button onClick={handleBackToMode} className="text-gray-500 hover:text-blue-600 font-bold text-lg transition-colors flex items-center mb-4">
+        <button onClick={handleBackToMode} className="text-slate-400 hover:text-blue-400 font-bold text-lg transition-colors flex items-center mb-4">
           <i className="fas fa-arrow-left mr-3"></i> Back to Menu
         </button>
 
         {/* Score Summary Card */}
-        <Card className="text-center py-12">
-          <div className={`w-28 h-28 mx-auto rounded-full flex items-center justify-center text-5xl mb-6 shadow-2xl ${passed ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+        <Card className="text-center py-12 bg-white/5 border-white/10 shadow-2xl backdrop-blur-2xl">
+          <div className={`w-28 h-28 mx-auto rounded-full flex items-center justify-center text-5xl mb-6 shadow-2xl ${passed ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
             <i className={`fas ${passed ? 'fa-trophy' : 'fa-clipboard-check'}`}></i>
           </div>
 
-          <h2 className="text-4xl font-extrabold text-gray-900 mb-2">Writing Complete!</h2>
-          <p className="text-xl text-gray-500 mb-8">Here is your writing result</p>
+          <h2 className="text-4xl font-extrabold text-white mb-2">Writing Complete!</h2>
+          <p className="text-xl text-slate-400 mb-8">Here is your writing result</p>
 
           <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto mb-10">
-            <div className="bg-orange-50 p-6 rounded-3xl border border-orange-100 shadow-sm">
-              <div className="text-sm text-orange-600 font-bold uppercase mb-2 tracking-wide">Task 1</div>
-              <div className="text-4xl font-extrabold text-gray-800">{partScores.part1}<span className="text-xl text-gray-400">/2</span></div>
+            <div className="bg-orange-500/10 p-6 rounded-3xl border border-orange-500/20 shadow-sm">
+              <div className="text-sm text-orange-400 font-bold uppercase mb-2 tracking-wide">Task 1</div>
+              <div className="text-4xl font-extrabold text-white">{partScores.part1}<span className="text-xl text-slate-500">/2</span></div>
             </div>
-            <div className="bg-purple-50 p-6 rounded-3xl border border-purple-100 shadow-sm">
-              <div className="text-sm text-purple-600 font-bold uppercase mb-2 tracking-wide">Task 2</div>
-              <div className="text-4xl font-extrabold text-gray-800">{partScores.part2}<span className="text-xl text-gray-400">/2</span></div>
+            <div className="bg-purple-500/10 p-6 rounded-3xl border border-purple-500/20 shadow-sm">
+              <div className="text-sm text-purple-400 font-bold uppercase mb-2 tracking-wide">Task 2</div>
+              <div className="text-4xl font-extrabold text-white">{partScores.part2}<span className="text-xl text-slate-500">/2</span></div>
             </div>
-            <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 shadow-sm">
-              <div className="text-sm text-blue-600 font-bold uppercase mb-2 tracking-wide">Task 3</div>
-              <div className="text-4xl font-extrabold text-gray-800">{partScores.part3.toFixed(1)}<span className="text-xl text-gray-400">/6</span></div>
+            <div className="bg-blue-500/10 p-6 rounded-3xl border border-blue-500/20 shadow-sm">
+              <div className="text-sm text-blue-400 font-bold uppercase mb-2 tracking-wide">Task 3</div>
+              <div className="text-4xl font-extrabold text-white">{partScores.part3.toFixed(1)}<span className="text-xl text-slate-500">/6</span></div>
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-3xl p-8 max-w-lg mx-auto mb-8 border border-gray-200">
-            <p className="text-gray-500 font-bold uppercase tracking-widest text-sm mb-3">Total Score</p>
-            <div className="text-7xl font-black text-gray-900 tracking-tight">{totalScore.toFixed(1)}<span className="text-3xl text-gray-400 font-normal">/10</span></div>
+          <div className="bg-white/5 rounded-3xl p-8 max-w-lg mx-auto mb-8 border border-white/5 shadow-inner">
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-sm mb-3">Total Score</p>
+            <div className="text-7xl font-black text-white tracking-tight">{totalScore.toFixed(1)}<span className="text-3xl text-slate-500 font-normal">/10</span></div>
           </div>
 
           {/* General Feedback */}
           {finalResult?.feedback && (
-            <div className="max-w-2xl mx-auto mb-8 bg-blue-50 rounded-2xl p-6 border border-blue-100">
+            <div className="max-w-2xl mx-auto mb-8 bg-blue-500/10 rounded-2xl p-6 border border-blue-500/20">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0">
                   <i className="fas fa-comment-dots text-xl"></i>
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-blue-800 mb-2">General Feedback</p>
-                  <p className="text-gray-700 leading-relaxed">{finalResult.feedback}</p>
+                  <p className="font-bold text-blue-400 mb-2">General Feedback</p>
+                  <p className="text-slate-300 leading-relaxed">{finalResult.feedback}</p>
                 </div>
               </div>
             </div>
@@ -666,7 +683,6 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
               <button
                 onClick={() => {
                   handleDownloadCertificate();
-                  onComplete(totalScore); // Update global stats
                 }}
                 className="px-10 py-5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-xl rounded-2xl shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 transform hover:-translate-y-1 transition-all flex items-center gap-3 mx-auto"
               >
@@ -678,7 +694,6 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
             <div className="space-y-6">
               <p className="text-orange-600 font-bold text-xl">Keep practicing to reach 6.0 to unlock your certificate!</p>
               <Button onClick={() => {
-                onComplete(totalScore);
                 handleBackToUnits();
               }}>
                 Return to Units
@@ -710,9 +725,9 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
         {/* Improved Version */}
         {finalResult?.improvedVersion && (
-          <Card title="Improved Version">
-            <div className="bg-green-50 rounded-2xl p-6 border border-green-100">
-              <p className="text-gray-800 text-lg leading-loose font-serif">{finalResult.improvedVersion}</p>
+          <Card title="Improved Version" className="bg-white/5 border-white/10 shadow-2xl backdrop-blur-2xl">
+            <div className="bg-green-500/10 rounded-2xl p-6 border border-green-500/20">
+              <p className="text-slate-300 text-lg leading-loose font-serif">{finalResult.improvedVersion}</p>
             </div>
           </Card>
         )}
@@ -737,51 +752,51 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
     return (
       <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
-        <button onClick={handleBackToUnits} className="text-gray-500 hover:text-blue-600 font-bold text-lg transition-colors flex items-center mb-4">
+        <button onClick={handleBackToUnits} className="text-slate-400 hover:text-blue-400 font-bold text-lg transition-colors flex items-center mb-4">
           <i className="fas fa-arrow-left mr-3"></i> Back to Units
         </button>
 
         <div className="text-center mb-10">
-          <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-2">{selectedUnit.title}</h2>
-          <p className="text-xl text-gray-500">Complete all parts to get your certificate</p>
+          <h2 className="text-4xl font-extrabold text-white tracking-tight mb-2">{selectedUnit.title}</h2>
+          <p className="text-xl text-slate-400">Complete all parts to get your certificate</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
           {/* Part 1 */}
-          <div onClick={() => setPracticeMode('SCRAMBLE_WORDS')} className={`cursor-pointer bg-white p-8 rounded-[2rem] shadow-soft border transition-all duration-300 group relative overflow-hidden ${partCompletion.part1 ? 'border-green-300 bg-green-50/30' : 'border-white hover:shadow-2xl hover:border-orange-200'}`}>
+          <div onClick={() => setPracticeMode('SCRAMBLE_WORDS')} className={`cursor-pointer bg-white/5 p-8 rounded-[2rem] shadow-2xl border transition-all duration-300 group relative overflow-hidden backdrop-blur-xl ${partCompletion.part1 ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-orange-500/50'}`}>
             {partCompletion.part1 && <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl shadow-sm"><i className="fas fa-check mr-1"></i> Done</div>}
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part1 ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part1 ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
               <i className="fas fa-sort-alpha-down"></i>
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-3">Part 1: Sentence Scramble</h3>
-            <p className="text-gray-600 text-base font-medium mb-4">2 Points</p>
-            <div className={`font-bold text-sm uppercase tracking-wider ${partCompletion.part1 ? 'text-green-600' : 'text-orange-600'}`}>
+            <h3 className="text-xl font-bold text-white mb-3">Part 1: Sentence Scramble</h3>
+            <p className="text-slate-400 text-base font-medium mb-4">2 Points</p>
+            <div className={`font-bold text-sm uppercase tracking-wider ${partCompletion.part1 ? 'text-green-400' : 'text-orange-400'}`}>
               {partCompletion.part1 ? 'Review' : 'Start'} <i className="fas fa-arrow-right ml-1"></i>
             </div>
           </div>
 
           {/* Part 2 */}
-          <div onClick={() => setPracticeMode('SCRAMBLE_PARAGRAPH')} className={`cursor-pointer bg-white p-8 rounded-[2rem] shadow-soft border transition-all duration-300 group relative overflow-hidden ${partCompletion.part2 ? 'border-green-300 bg-green-50/30' : 'border-white hover:shadow-2xl hover:border-purple-200'}`}>
+          <div onClick={() => setPracticeMode('SCRAMBLE_PARAGRAPH')} className={`cursor-pointer bg-white/5 p-8 rounded-[2rem] shadow-2xl border transition-all duration-300 group relative overflow-hidden backdrop-blur-xl ${partCompletion.part2 ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-purple-500/50'}`}>
             {partCompletion.part2 && <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl shadow-sm"><i className="fas fa-check mr-1"></i> Done</div>}
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part2 ? 'bg-green-100 text-green-600' : 'bg-purple-100 text-purple-600'}`}>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part2 ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'}`}>
               <i className="fas fa-layer-group"></i>
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-3">Part 2: Paragraph Scramble</h3>
-            <p className="text-gray-600 text-base font-medium mb-4">2 Points</p>
-            <div className={`font-bold text-sm uppercase tracking-wider ${partCompletion.part2 ? 'text-green-600' : 'text-purple-600'}`}>
+            <h3 className="text-xl font-bold text-white mb-3">Part 2: Paragraph Scramble</h3>
+            <p className="text-slate-400 text-base font-medium mb-4">2 Points</p>
+            <div className={`font-bold text-sm uppercase tracking-wider ${partCompletion.part2 ? 'text-green-400' : 'text-purple-400'}`}>
               {partCompletion.part2 ? 'Review' : 'Start'} <i className="fas fa-arrow-right ml-1"></i>
             </div>
           </div>
 
           {/* Part 3 */}
-          <div onClick={() => setPracticeMode('ESSAY')} className={`cursor-pointer bg-white p-8 rounded-[2rem] shadow-soft border transition-all duration-300 group relative overflow-hidden ${partCompletion.part3 ? 'border-green-300 bg-green-50/30' : 'border-white hover:shadow-2xl hover:border-blue-200'}`}>
+          <div onClick={() => setPracticeMode('ESSAY')} className={`cursor-pointer bg-white/5 p-8 rounded-[2rem] shadow-2xl border transition-all duration-300 group relative overflow-hidden backdrop-blur-xl ${partCompletion.part3 ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-blue-500/50'}`}>
             {partCompletion.part3 && <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl shadow-sm"><i className="fas fa-check mr-1"></i> Done</div>}
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part3 ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform ${partCompletion.part3 ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
               <i className={`fas ${selectedUnit.type === 'EMAIL' ? 'fa-envelope' : 'fa-pen-nib'}`}></i>
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-3">Part 3: {taskTitle}</h3>
-            <p className="text-gray-600 text-base font-medium mb-4">6 Points</p>
-            <div className={`font-bold text-sm uppercase tracking-wider ${partCompletion.part3 ? 'text-green-600' : 'text-blue-600'}`}>
+            <h3 className="text-xl font-bold text-white mb-3">Part 3: {taskTitle}</h3>
+            <p className="text-slate-400 text-base font-medium mb-4">6 Points</p>
+            <div className={`font-bold text-sm uppercase tracking-wider ${partCompletion.part3 ? 'text-green-400' : 'text-blue-400'}`}>
               {partCompletion.part3 ? 'Review' : 'Start'} <i className="fas fa-arrow-right ml-1"></i>
             </div>
           </div>
@@ -814,21 +829,21 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
           <i className="fas fa-arrow-left mr-3"></i> Back to Menu
         </button>
 
-        <Card title={`Part 1: Sentence Scramble (${scrambleIdx + 1}/${selectedUnit.scrambleSentences.length})`}>
+        <Card title={`Part 1: Sentence Scramble (${scrambleIdx + 1}/${selectedUnit.scrambleSentences.length})`} className="bg-white/5 border-white/10 shadow-2xl backdrop-blur-2xl">
           <div className="py-8 space-y-10">
             <div className="text-center">
-              <p className="text-gray-500 mb-4 font-medium text-lg">Arrange the words to make a meaningful sentence</p>
+              <p className="text-slate-400 mb-4 font-medium text-lg">Arrange the words to make a meaningful sentence</p>
 
               {/* Answer Area */}
-              <div className={`min-h-[120px] bg-gray-50 rounded-2xl border-2 border-dashed p-6 flex flex-wrap gap-3 justify-center items-center transition-colors ${scrambleStatus === 'correct' ? 'border-green-400 bg-green-50/50' :
-                scrambleStatus === 'wrong' ? 'border-red-300 bg-red-50/50' : 'border-gray-300'
+              <div className={`min-h-[120px] bg-black/20 rounded-2xl border-2 border-dashed p-6 flex flex-wrap gap-3 justify-center items-center transition-colors ${scrambleStatus === 'correct' ? 'border-green-500/50 bg-green-500/10' :
+                scrambleStatus === 'wrong' ? 'border-red-500/50 bg-red-500/10' : 'border-white/10'
                 }`}>
-                {selectedWords.length === 0 && <span className="text-gray-400 italic text-lg">Click words below to build sentence</span>}
+                {selectedWords.length === 0 && <span className="text-slate-500 italic text-lg">Click words below to build sentence</span>}
                 {selectedWords.map((word) => (
                   <button
                     key={word.id}
                     onClick={() => handleWordClick(word, 'selected')}
-                    className="px-5 py-3 bg-white border border-gray-200 shadow-sm rounded-xl font-bold text-lg text-gray-800 hover:bg-red-50 hover:border-red-200 transition-colors transform active:scale-95"
+                    className="px-5 py-3 bg-white/5 border border-white/10 shadow-sm rounded-xl font-bold text-lg text-white hover:bg-red-500/10 hover:border-red-500/50 transition-colors transform active:scale-95"
                   >
                     {word.text}
                   </button>
@@ -837,8 +852,8 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
               {/* Feedback Message */}
               <div className="h-10 mt-4">
-                {scrambleStatus === 'correct' && <span className="text-green-600 font-bold text-xl flex items-center justify-center gap-2"><i className="fas fa-check-circle text-2xl"></i>Correct!</span>}
-                {scrambleStatus === 'wrong' && <span className="text-red-500 font-bold text-xl flex items-center justify-center gap-2"><i className="fas fa-times-circle text-2xl"></i>Incorrect, try again.</span>}
+                {scrambleStatus === 'correct' && <span className="text-green-400 font-bold text-xl flex items-center justify-center gap-2"><i className="fas fa-check-circle text-2xl"></i>Correct!</span>}
+                {scrambleStatus === 'wrong' && <span className="text-red-400 font-bold text-xl flex items-center justify-center gap-2"><i className="fas fa-times-circle text-2xl"></i>Incorrect, try again.</span>}
               </div>
             </div>
 
@@ -848,7 +863,7 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
                 <button
                   key={word.id}
                   onClick={() => handleWordClick(word, 'pool')}
-                  className="px-5 py-3 bg-blue-50 border border-blue-100 text-blue-700 rounded-xl font-bold text-lg shadow-sm hover:bg-blue-100 hover:-translate-y-1 transition-all"
+                  className="px-5 py-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl font-bold text-lg shadow-sm hover:bg-blue-500/20 hover:-translate-y-1 transition-all"
                 >
                   {word.text}
                 </button>
@@ -856,7 +871,7 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-center gap-6 pt-6 border-t border-gray-100">
+            <div className="flex justify-center gap-6 pt-6 border-t border-white/10">
               <Button variant="secondary" onClick={() => loadScrambleSentence(scrambleIdx)}>
                 <i className="fas fa-rotate-right mr-2"></i> Reset
               </Button>
@@ -884,16 +899,16 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
           <i className="fas fa-arrow-left mr-3"></i> Back to Menu
         </button>
 
-        <Card title="Part 2: Paragraph Scramble">
+        <Card title="Part 2: Paragraph Scramble" className="bg-white/5 border-white/10 shadow-2xl backdrop-blur-2xl">
           <div className="space-y-8">
-            <p className="text-gray-600 text-center text-lg font-medium">Arrange the sentences below to form a logical paragraph.</p>
+            <p className="text-slate-400 text-center text-lg font-medium">Arrange the sentences below to form a logical paragraph.</p>
 
             {/* Ordered Area */}
-            <div className={`space-y-4 min-h-[200px] p-6 rounded-2xl border-2 border-dashed transition-colors ${paraStatus === 'correct' ? 'border-green-400 bg-green-50/50' :
-              paraStatus === 'wrong' ? 'border-red-300 bg-red-50/50' : 'border-gray-300 bg-gray-50/30'
+            <div className={`space-y-4 min-h-[200px] p-6 rounded-2xl border-2 border-dashed transition-colors ${paraStatus === 'correct' ? 'border-green-500/50 bg-green-500/10' :
+              paraStatus === 'wrong' ? 'border-red-500/50 bg-red-500/10' : 'border-white/10 bg-black/20'
               }`}>
               {paraSelected.length === 0 && (
-                <div className="text-center text-gray-400 h-full flex items-center justify-center pt-12 text-lg">
+                <div className="text-center text-slate-500 h-full flex items-center justify-center pt-12 text-lg">
                   <p>Click sentences from the pool to move them here.</p>
                 </div>
               )}
@@ -911,24 +926,24 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
             {/* Status */}
             <div className="text-center h-8">
-              {paraStatus === 'correct' && <span className="text-green-600 font-bold text-xl"><i className="fas fa-check-circle mr-2"></i>Perfect! Paragraph is correct.</span>}
-              {paraStatus === 'wrong' && <span className="text-red-500 font-bold text-xl"><i className="fas fa-times-circle mr-2"></i>Incorrect order. Try again.</span>}
+              {paraStatus === 'correct' && <span className="text-green-400 font-bold text-xl"><i className="fas fa-check-circle mr-2"></i>Perfect! Paragraph is correct.</span>}
+              {paraStatus === 'wrong' && <span className="text-red-400 font-bold text-xl"><i className="fas fa-times-circle mr-2"></i>Incorrect order. Try again.</span>}
             </div>
 
             {/* Pool Area */}
-            <div className="border-t border-gray-100 pt-8">
-              <h4 className="font-bold text-gray-700 mb-6 text-xl">Sentence Pool</h4>
+            <div className="border-t border-white/10 pt-8">
+              <h4 className="font-bold text-slate-300 mb-6 text-xl">Sentence Pool</h4>
               <div className="space-y-4">
                 {paraAvailable.map((item) => (
                   <div
                     key={item.id}
                     onClick={() => handleSentenceClick(item, 'pool')}
-                    className="p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-sm cursor-pointer hover:bg-blue-100 hover:shadow-md hover:-translate-y-0.5 transition-all text-blue-900 text-lg font-medium"
+                    className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl shadow-sm cursor-pointer hover:bg-blue-500/20 hover:shadow-md hover:-translate-y-0.5 transition-all text-blue-200 text-lg font-medium"
                   >
                     {item.text}
                   </div>
                 ))}
-                {paraAvailable.length === 0 && <p className="text-center text-gray-400 italic text-lg">All sentences placed.</p>}
+                {paraAvailable.length === 0 && <p className="text-center text-slate-500 italic text-lg">All sentences placed.</p>}
               </div>
             </div>
 
@@ -954,41 +969,41 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
-        <button onClick={handleBackToMode} className="flex items-center text-gray-500 hover:text-blue-600 font-bold text-lg transition-colors">
+        <button onClick={handleBackToMode} className="flex items-center text-slate-400 hover:text-blue-400 font-bold text-lg transition-colors">
           <i className="fas fa-arrow-left mr-3"></i> Back to Menu
         </button>
-        <div className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-full border border-blue-100 uppercase tracking-wide">Part 3: {taskTitle}</div>
+        <div className="text-sm font-bold text-blue-400 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20 uppercase tracking-wide backdrop-blur-md">Part 3: {taskTitle}</div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Input Area */}
         <div className="space-y-6">
-          <Card title="Writing Task" className="h-full">
+          <Card title="Writing Task" className="h-full bg-white/5 border-white/10 shadow-2xl backdrop-blur-2xl">
             <div className="space-y-6">
-              <div className="bg-yellow-50 border border-yellow-100 p-6 rounded-2xl text-yellow-900">
-                <p className="font-bold mb-2 text-lg flex items-center gap-2"><i className={`fas ${taskIcon}`}></i> Prompt:</p>
-                <p className="italic mb-4 text-lg leading-relaxed font-serif">"{selectedUnit.essayPrompt}"</p>
-                <p className="text-sm text-yellow-700 bg-yellow-100/50 p-3 rounded-lg"><span className="font-bold">Hint:</span> {selectedUnit.essayHint}</p>
+              <div className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-2xl text-blue-100">
+                <p className="font-bold mb-2 text-lg flex items-center gap-2 text-blue-400"><i className={`fas ${taskIcon}`}></i> Prompt:</p>
+                <p className="italic mb-4 text-lg leading-relaxed font-serif text-slate-200">"{selectedUnit.essayPrompt}"</p>
+                <p className="text-sm text-blue-300 bg-blue-500/10 p-3 rounded-lg"><span className="font-bold text-blue-400">Hint:</span> {selectedUnit.essayHint}</p>
               </div>
 
               {/* New Structure Hint */}
-              <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl text-blue-900">
-                <h4 className="font-bold mb-3 flex items-center gap-2 text-lg"><i className="fas fa-list-ul"></i> Structure Suggestions:</h4>
+              <div className="bg-purple-500/10 border border-purple-500/20 p-6 rounded-2xl text-purple-100">
+                <h4 className="font-bold mb-3 flex items-center gap-2 text-lg text-purple-400"><i className="fas fa-list-ul"></i> Structure Suggestions:</h4>
                 <ul className="space-y-3 list-disc pl-5">
-                  <li className="leading-relaxed"><span className="font-bold text-blue-800">Introduction:</span> {selectedUnit.structure.introduction}</li>
-                  <li className="leading-relaxed"><span className="font-bold text-blue-800">Body:</span> {selectedUnit.structure.body}</li>
-                  <li className="leading-relaxed"><span className="font-bold text-blue-800">Conclusion:</span> {selectedUnit.structure.conclusion}</li>
+                  <li className="leading-relaxed"><span className="font-bold text-purple-400">Introduction:</span> {selectedUnit.structure.introduction}</li>
+                  <li className="leading-relaxed"><span className="font-bold text-purple-400">Body:</span> {selectedUnit.structure.body}</li>
+                  <li className="leading-relaxed"><span className="font-bold text-purple-400">Conclusion:</span> {selectedUnit.structure.conclusion}</li>
                 </ul>
               </div>
 
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                className="w-full h-80 p-6 rounded-2xl border-2 border-gray-200 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none bg-gray-50 text-gray-800 text-lg leading-loose font-medium shadow-inner transition-all"
+                className="w-full h-80 p-6 rounded-2xl border-2 border-white/10 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none bg-black/20 text-white text-lg leading-loose font-medium shadow-inner transition-all placeholder-slate-600"
                 placeholder={`Type your ${selectedUnit.type === 'EMAIL' ? 'email' : 'essay'} here...`}
               />
               <div className="flex justify-between items-center">
-                <span className="text-base font-medium text-gray-500">{text.split(/\s+/).filter(w => w.length > 0).length} words</span>
+                <span className="text-base font-medium text-slate-500">{text.split(/\s+/).filter(w => w.length > 0).length} words</span>
                 <Button onClick={handleEssayAnalyze} isLoading={isAnalyzing} disabled={text.length < 10}>
                   <i className="fas fa-paper-plane mr-2"></i> AI Grading
                 </Button>
@@ -1000,16 +1015,16 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
         {/* Output Area */}
         <div className="space-y-6">
           {result ? (
-            <Card title="Assessment Result" className="h-full border-blue-200 bg-white ring-4 ring-blue-50">
+            <Card title="Assessment Result" className="h-full bg-white/5 border-blue-500/30 shadow-2xl backdrop-blur-2xl ring-1 ring-blue-500/20">
               <div className="flex flex-col gap-8 mb-8">
-                <div className="flex items-center gap-8 bg-gray-50 p-6 rounded-3xl">
+                <div className="flex items-center gap-8 bg-black/20 p-6 rounded-3xl border border-white/5">
                   <ScoreCircle score={(result.score / 10) * 6} />
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-gray-900 text-xl">General Feedback</h3>
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Scaled to 6.0</span>
+                      <h3 className="font-bold text-white text-xl">General Feedback</h3>
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Scaled to 6.0</span>
                     </div>
-                    <p className="text-base text-gray-600 leading-relaxed">{result.feedback}</p>
+                    <p className="text-base text-slate-300 leading-relaxed">{result.feedback}</p>
                   </div>
                 </div>
                 {/* Score Breakdown */}
@@ -1032,27 +1047,27 @@ const WritingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
                 )}
 
                 {result.improvedVersion && (
-                  <div className="bg-green-50 p-6 rounded-3xl border border-green-100 shadow-sm">
-                    <h4 className="text-green-800 font-bold mb-4 text-base uppercase tracking-wide flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center"><i className="fas fa-magic"></i></div>
+                  <div className="bg-green-500/10 p-6 rounded-3xl border border-green-500/20 shadow-sm">
+                    <h4 className="text-green-400 font-bold mb-4 text-base uppercase tracking-wide flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center"><i className="fas fa-magic"></i></div>
                       Improved Version
                     </h4>
-                    <p className="text-gray-800 text-lg leading-loose font-serif">{result.improvedVersion}</p>
+                    <p className="text-slate-300 text-lg leading-loose font-serif">{result.improvedVersion}</p>
                   </div>
                 )}
               </div>
-              <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+              <div className="mt-8 pt-6 border-t border-white/10 text-center">
                 <Button onClick={handleFinishPart3}>
                   Save Part 3 & Return <i className="fas fa-save ml-2"></i>
                 </Button>
               </div>
             </Card>
           ) : (
-            <div className="h-full rounded-[2rem] border-4 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 p-12 text-center bg-gray-50/50">
-              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-md">
-                <i className="fas fa-robot text-4xl text-blue-300"></i>
+            <div className="h-full rounded-[2rem] border-4 border-dashed border-white/10 flex flex-col items-center justify-center text-slate-500 p-12 text-center bg-black/20 backdrop-blur-sm">
+              <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6 shadow-xl border border-white/5">
+                <i className="fas fa-robot text-4xl text-blue-400"></i>
               </div>
-              <p className="text-xl font-medium max-w-md">Write your {selectedUnit.type === 'EMAIL' ? 'email' : 'essay'} on the left and click "AI Grading" to get instant feedback from Gemini.</p>
+              <p className="text-xl font-medium max-w-md text-slate-400">Write your {selectedUnit.type === 'EMAIL' ? 'email' : 'essay'} on the left and click "AI Grading" to get instant feedback from Gemini.</p>
             </div>
           )}
         </div>
