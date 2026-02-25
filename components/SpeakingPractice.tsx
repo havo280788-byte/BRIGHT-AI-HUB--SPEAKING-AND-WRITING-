@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import jsPDF from 'jspdf';
+
 import { Button, Card, ScoreCircle, ScoreBreakdown, RubricFeedbackCard, DetailedErrorsSection } from './Components';
 import { analyzePronunciation, interactWithExaminer, gradeSpeakingSession, generateSpeech } from '../services/geminiService';
 import { AIResponse, ChatMessage } from '../types';
@@ -687,6 +689,167 @@ DEVELOPED BY TEACHER VO THI THU HA
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadFeedbackPDF = () => {
+    if (!selectedUnit || !finalResult) return;
+
+    const totalScore = partScores.part1 + partScores.part2;
+    const today = new Date().toLocaleString();
+
+    const doc = new jsPDF();
+    let yPos = 20;
+
+    // Header
+    doc.setFillColor(30, 58, 138); // Dark Blue
+    doc.rect(0, 0, 210, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.text('SPEAKING PRACTICE FEEDBACK', 105, 20, { align: 'center' });
+    doc.setFontSize(16);
+    doc.text('LINGUAAI - SMART LEARNING PLATFORM', 105, 30, { align: 'center' });
+
+    yPos = 50;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`STUDENT: ${studentName}`, 20, yPos);
+    doc.text(`DATE: ${today}`, 120, yPos);
+    yPos += 10;
+    doc.text(`UNIT: ${selectedUnit.id} - ${selectedUnit.title}`, 20, yPos);
+
+    yPos += 15;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, yPos, 190, yPos);
+    yPos += 10;
+
+    // Overall Score
+    doc.setFontSize(14);
+    doc.text('1. OVERALL SCORE', 20, yPos);
+    yPos += 10;
+    doc.setFontSize(24);
+    doc.setTextColor(37, 99, 235); // Blue-600
+    doc.text(`${totalScore.toFixed(1)} / 10.0`, 20, yPos);
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    yPos += 10;
+    doc.text(`- Part 1 (Shadowing): ${partScores.part1.toFixed(1)} / 5.0`, 25, yPos);
+    yPos += 7;
+    doc.text(`- Part 2 (Free Speaking): ${partScores.part2.toFixed(1)} / 5.0`, 25, yPos);
+
+    yPos += 15;
+    if (finalResult.scoreBreakdown) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('2. SCORE BREAKDOWN', 20, yPos);
+      yPos += 10;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      Object.entries(finalResult.scoreBreakdown).forEach(([key, value]) => {
+        doc.text(`- ${key}: ${value} / 10`, 25, yPos);
+        yPos += 7;
+      });
+      yPos += 5;
+    }
+
+    // General Feedback
+    if (yPos > 250) { doc.addPage(); yPos = 20; }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('3. GENERAL FEEDBACK', 20, yPos);
+    yPos += 10;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    const splitFeedback = doc.splitTextToSize(finalResult.feedback || "No feedback available.", 170);
+    doc.text(splitFeedback, 20, yPos);
+    yPos += (splitFeedback.length * 5) + 10;
+
+    // Rubric Breakdown
+    if (finalResult.rubricFeedback) {
+      if (yPos > 230) { doc.addPage(); yPos = 20; }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('4. RUBRIC BREAKDOWN', 20, yPos);
+      yPos += 10;
+      doc.setFontSize(10);
+      finalResult.rubricFeedback.forEach(item => {
+        if (yPos > 250) { doc.addPage(); yPos = 20; }
+        doc.setFont('helvetica', 'bold');
+        doc.text(`[${item.criterion}]: ${item.score}/${item.maxScore}`, 20, yPos);
+        yPos += 6;
+        doc.setFont('helvetica', 'normal');
+        const critFeedback = doc.splitTextToSize(`Feedback: ${item.feedback}`, 160);
+        doc.text(critFeedback, 25, yPos);
+        yPos += (critFeedback.length * 5) + 4;
+
+        if (item.suggestions && item.suggestions.length > 0) {
+          doc.setFont('helvetica', 'italic');
+          doc.text(`Suggestions:`, 25, yPos);
+          yPos += 5;
+          item.suggestions.forEach((s, i) => {
+            const sugText = doc.splitTextToSize(`${i + 1}. ${s}`, 150);
+            doc.text(sugText, 30, yPos);
+            yPos += (sugText.length * 5);
+          });
+          yPos += 5;
+        }
+        doc.setFontSize(10);
+      });
+      yPos += 10;
+    }
+
+    // Detailed Errors
+    if (finalResult.detailedErrors && finalResult.detailedErrors.length > 0) {
+      if (yPos > 230) { doc.addPage(); yPos = 20; }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('5. DETAILED ERRORS & CORRECTIONS', 20, yPos);
+      yPos += 10;
+      doc.setFontSize(10);
+      finalResult.detailedErrors.forEach((error, idx) => {
+        if (yPos > 250) { doc.addPage(); yPos = 20; }
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${idx + 1}. TYPE: ${error.type.toUpperCase()}`, 20, yPos);
+        yPos += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Original: "${error.original}"`, 25, yPos);
+        yPos += 5;
+        doc.setTextColor(22, 101, 52); // Green-800
+        doc.text(`Correction: "${error.correction}"`, 25, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 5;
+        const explText = doc.splitTextToSize(`Explanation: ${error.explanation}`, 160);
+        doc.text(explText, 25, yPos);
+        yPos += (explText.length * 5) + 5;
+      });
+      yPos += 10;
+    }
+
+    // Conversation Transcript
+    if (finalResult.transcription) {
+      if (yPos > 230) { doc.addPage(); yPos = 20; }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('6. CONVERSATION TRANSCRIPT', 20, yPos);
+      yPos += 10;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const splitTranscript = doc.splitTextToSize(finalResult.transcription, 170);
+      doc.text(splitTranscript, 20, yPos);
+      yPos += (splitTranscript.length * 5) + 20;
+    }
+
+    // Footer
+    if (yPos > 260) { doc.addPage(); yPos = 20; } else { yPos = 270; }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setDrawColor(30, 58, 138);
+    doc.line(20, yPos, 190, yPos);
+    yPos += 10;
+    doc.text('DEVELOPED BY TEACHER VO THI THU HA', 105, yPos, { align: 'center' });
+
+    doc.save(`Speaking-Feedback-${studentName}-${selectedUnit.id.toString().replace(/\s+/g, '_')}.pdf`);
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -808,6 +971,13 @@ DEVELOPED BY TEACHER VO THI THU HA
                 >
                   <i className="fas fa-file-download text-xl text-blue-400"></i>
                   Download Feedback (.txt)
+                </button>
+                <button
+                  onClick={handleDownloadFeedbackPDF}
+                  className="px-8 py-4 bg-blue-600/20 text-blue-400 font-bold text-lg rounded-2xl border border-blue-500/30 hover:bg-blue-600/30 transform hover:-translate-y-1 transition-all flex items-center gap-3"
+                >
+                  <i className="fas fa-file-pdf text-xl"></i>
+                  Download Feedback (.pdf)
                 </button>
               </div>
             </div>
