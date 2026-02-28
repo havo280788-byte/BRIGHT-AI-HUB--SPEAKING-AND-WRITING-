@@ -1345,22 +1345,39 @@ DEVELOPED BY TEACHER VO THI THU HA
         )}
 
         {chatHistory.map((msg, idx) => (
-          <div key={idx} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}>
-            <div className={`max-w-[85%] rounded-[2rem] p-6 shadow-lg transition-all ${msg.role === 'ai'
-              ? 'bg-white/5 border border-white/5 rounded-tl-none text-white'
-              : 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-tr-none'
+          <div key={idx} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'} items-end gap-3`}>
+            {msg.role === 'ai' && (
+              <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mb-1">
+                <i className="fas fa-robot text-sm"></i>
+              </div>
+            )}
+            <div className={`max-w-[75%] rounded-[1.75rem] px-5 py-4 shadow-lg ${msg.role === 'ai'
+              ? 'bg-white/5 border border-white/10 rounded-bl-md'
+              : 'bg-gradient-to-br from-blue-600 to-indigo-600 rounded-br-md'
               }`}>
-              {msg.role === 'ai' && (
-                <div className="text-xs font-bold text-slate-500 mb-2 flex items-center gap-2 uppercase tracking-wide">
-                  <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400"><i className="fas fa-robot"></i></div>
-                  Examiner
-                </div>
-              )}
-              <p className="text-lg md:text-xl leading-relaxed font-medium">{msg.text}</p>
-              {msg.audioUrl && (
-                <audio src={msg.audioUrl} controls autoPlay className={`mt-4 h-10 w-full max-w-[240px] opacity-90 hover:opacity-100 transition-opacity ${msg.role === 'ai' ? 'invert brightness-125' : ''}`} />
+              {/* Label */}
+              <p className={`text-xs font-bold uppercase tracking-widest mb-2 ${msg.role === 'ai' ? 'text-slate-500' : 'text-blue-200'}`}>
+                {msg.role === 'ai' ? '🎙 Examiner Question' : '🎤 Your Answer'}
+              </p>
+              {/* Audio only — no text */}
+              {msg.audioUrl ? (
+                <audio
+                  src={msg.audioUrl}
+                  controls
+                  autoPlay={msg.role === 'ai'}
+                  className={`h-10 w-full max-w-[260px] ${msg.role === 'ai' ? 'invert brightness-125' : 'opacity-90'}`}
+                />
+              ) : (
+                <p className={`text-sm italic ${msg.role === 'ai' ? 'text-slate-500' : 'text-blue-200'}`}>
+                  {msg.role === 'ai' ? 'Audio unavailable' : 'Answer recorded ✓'}
+                </p>
               )}
             </div>
+            {msg.role === 'user' && (
+              <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white shrink-0 mb-1">
+                <i className="fas fa-user text-sm"></i>
+              </div>
+            )}
           </div>
         ))}
 
