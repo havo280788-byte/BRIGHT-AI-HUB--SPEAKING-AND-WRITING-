@@ -864,6 +864,21 @@ DEVELOPED BY TEACHER VO THI THU HA
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Browser TTS fallback when Gemini TTS fails
+  const speakWithBrowser = (text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel(); // stop any ongoing speech
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    // Prefer an English voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const enVoice = voices.find(v => v.lang.startsWith('en'));
+    if (enVoice) utterance.voice = enVoice;
+    window.speechSynthesis.speak(utterance);
+  };
+
   const handleDownloadAnswers = async () => {
     if (userAudioBlobsRef.current.length === 0) return;
     try {
@@ -1371,18 +1386,29 @@ DEVELOPED BY TEACHER VO THI THU HA
               <p className={`text-xs font-bold uppercase tracking-widest mb-2 ${msg.role === 'ai' ? 'text-slate-500' : 'text-blue-200'}`}>
                 {msg.role === 'ai' ? '🎙 Examiner Question' : '🎤 Your Answer'}
               </p>
-              {/* Audio only — no text */}
-              {msg.audioUrl ? (
+              {/* Audio player if available */}
+              {msg.audioUrl && (
                 <audio
                   src={msg.audioUrl}
                   controls
                   autoPlay={msg.role === 'ai'}
                   className={`h-10 w-full max-w-[260px] ${msg.role === 'ai' ? 'invert brightness-125' : 'opacity-90'}`}
                 />
-              ) : (
-                <p className={`text-sm italic ${msg.role === 'ai' ? 'text-slate-500' : 'text-blue-200'}`}>
-                  {msg.role === 'ai' ? 'Audio unavailable' : 'Answer recorded ✓'}
-                </p>
+              )}
+              {/* Fallback: show text + browser TTS button for AI when Gemini TTS fails */}
+              {!msg.audioUrl && msg.role === 'ai' && (
+                <div className="space-y-2">
+                  <p className="text-base text-white leading-relaxed">{msg.text}</p>
+                  <button
+                    onClick={() => speakWithBrowser(msg.text)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-sm font-bold rounded-full transition-colors"
+                  >
+                    <i className="fas fa-volume-up"></i> Play
+                  </button>
+                </div>
+              )}
+              {!msg.audioUrl && msg.role === 'user' && (
+                <p className="text-sm italic text-blue-200">Answer recorded ✓</p>
               )}
             </div>
             {msg.role === 'user' && (

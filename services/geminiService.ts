@@ -109,32 +109,40 @@ const withRetry = async <T>(
 
 export const generateSpeech = async (text: string): Promise<string> => {
   const ai = getClient();
-  try {
-    // Use dedicated TTS model for audio generation
-    const response = await withRetry(async () => {
-      return await ai.models.generateContent({
+  // Try different voices as fallback on each retry
+  const voices = ['Kore', 'Aoede', 'Charon'];
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const voiceName = voices[attempt % voices.length];
+      const response = await ai.models.generateContent({
         model: TTS_MODEL,
         contents: { parts: [{ text }] },
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
+            voiceConfig: { prebuiltVoiceConfig: { voiceName } }
           }
         }
       });
-    }, "TTS");
 
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) {
-      console.warn("TTS: No audio data in response");
-      return "";
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        return base64Audio; // success
+      }
+      console.warn(`TTS attempt ${attempt + 1}: No audio data, retrying...`);
+    } catch (error: any) {
+      console.warn(`TTS attempt ${attempt + 1} failed:`, error.message);
     }
-    return base64Audio;
-  } catch (error: any) {
-    console.error("TTS Error:", error.message);
-    // Return empty string if TTS fails, so chat can continue with text only
-    return "";
+
+    // Wait before retry: 1s, 2s, 4s
+    if (attempt < 2) {
+      await delay(1000 * Math.pow(2, attempt));
+    }
   }
+
+  console.warn("TTS: All attempts failed, returning empty string for browser fallback.");
+  return "";
 };
 
 export const analyzeWriting = async (
