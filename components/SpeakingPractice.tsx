@@ -332,14 +332,10 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
       // If unit has pre-defined questions, use the first one
       const firstQ = selectedUnit?.freeSpeakingQuestions ? selectedUnit.freeSpeakingQuestions[0].question : undefined;
 
-      const { aiResponse, aiAudioBase64 } = await interactWithExaminer([], selectedUnit!.title, undefined, firstQ);
+      const { aiResponse } = await interactWithExaminer([], selectedUnit!.title, undefined, firstQ);
 
-      let aiAudioUrl = undefined;
-      if (aiAudioBase64) {
-        aiAudioUrl = createWavUrl(aiAudioBase64, 24000);
-      }
-
-      setChatHistory([{ role: 'ai', text: aiResponse, audioUrl: aiAudioUrl }]);
+      // Audio is handled by browser speechSynthesis via useEffect auto-play
+      setChatHistory([{ role: 'ai', text: aiResponse, audioUrl: undefined }]);
     } catch (e) {
       console.error(e);
       setPermissionError("Could not connect to AI examiner.");
@@ -478,7 +474,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
     try {
       // Send audio to AI to transcribe + get next question
-      const { userTranscription, aiResponse, aiAudioBase64 } = await interactWithExaminer(
+      const { userTranscription, aiResponse } = await interactWithExaminer(
         chatHistory,
         selectedUnit.title,
         base64,
@@ -486,16 +482,11 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
         isFinalTurn
       );
 
-      // Process AI Audio
-      let aiAudioUrl = undefined;
-      if (aiAudioBase64) {
-        aiAudioUrl = createWavUrl(aiAudioBase64, 24000);
-      }
-
+      // Audio is handled by browser speechSynthesis via useEffect auto-play
       const newHistory: ChatMessage[] = [
         ...chatHistory,
         { role: 'user', text: userTranscription, audioUrl: audioUrl || undefined },
-        { role: 'ai', text: aiResponse, audioUrl: aiAudioUrl }
+        { role: 'ai', text: aiResponse, audioUrl: undefined }
       ];
 
       setChatHistory(newHistory);

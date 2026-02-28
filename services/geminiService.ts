@@ -19,8 +19,8 @@ const TTS_MODEL = "gemini-2.5-flash-preview-tts";
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Retry configuration
-const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 2000;
+const MAX_RETRIES = 4;
+const BASE_DELAY_MS = 3000;
 
 export const setApiKey = (key: string) => {
   appApiKey = key;
@@ -283,7 +283,7 @@ export const interactWithExaminer = async (
   userAudioBase64?: string,
   specificQuestion?: string,
   isFinish: boolean = false
-): Promise<{ userTranscription: string; aiResponse: string; aiAudioBase64?: string }> => {
+): Promise<{ userTranscription: string; aiResponse: string }> => {
 
   // Construct context from history
   const context = history.map(h => `${h.role === 'ai' ? 'Examiner' : 'Student'}: ${h.text}`).join("\n");
@@ -363,16 +363,10 @@ export const interactWithExaminer = async (
     const jsonText = cleanJsonString(response.text || "{}");
     const result = JSON.parse(jsonText);
 
-    // Generate TTS Audio for the response
-    let aiAudioBase64 = "";
-    if (result.response) {
-      aiAudioBase64 = await generateSpeech(result.response);
-    }
-
+    // TTS is handled by browser speechSynthesis in the component — no API call needed
     return {
       userTranscription: result.transcription || "",
-      aiResponse: result.response,
-      aiAudioBase64
+      aiResponse: result.response
     };
   } catch (error: any) {
     console.error("Gemini Interaction Error:", error.message);
