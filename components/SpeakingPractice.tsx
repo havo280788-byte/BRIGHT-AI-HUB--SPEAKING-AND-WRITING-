@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import jsPDF from 'jspdf';
+import lamejs from 'lamejs';
 
 import { Button, Card, ScoreCircle, ScoreBreakdown, RubricFeedbackCard, DetailedErrorsSection } from './Components';
 import { analyzePronunciation, interactWithExaminer, gradeSpeakingSession, generateSpeech } from '../services/geminiService';
@@ -254,6 +255,9 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
+  // Collect all user answer blobs for Free Speaking download
+  const userAudioBlobsRef = useRef<Blob[]>([]);
+
   // Analysis State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AIResponse | null>(null);
@@ -444,6 +448,8 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
     setIsAnalyzing(true);
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+    // Save blob for later download
+    userAudioBlobsRef.current.push(audioBlob);
     const base64 = await blobToBase64(audioBlob);
 
     // Determine next question
@@ -856,6 +862,68 @@ DEVELOPED BY TEACHER VO THI THU HA
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleDownloadAnswers = async () => {
+    if (userAudioBlobsRef.current.length === 0) return;
+    try {
+      const audioCtx = new AudioContext();
+      const mp3Encoder = new lamejs.Mp3Encoder(1, 44100, 128); // mono, 44100 Hz, 128 kbps
+      const mp3Data: Uint8Array[] = [];
+
+      for (const blob of userAudioBlobsRef.current) {
+        const arrayBuffer = await blob.arrayBuffer();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+        // Resample to 44100 if needed and get mono channel
+        const sampleRate = audioBuffer.sampleRate;
+        const channelData = audioBuffer.getChannelData(0); // mono
+
+        // Resample to 44100 Hz if source differs
+        let samples: Float32Array;
+        if (sampleRate !== 44100) {
+          const ratio = sampleRate / 44100;
+          const newLength = Math.round(channelData.length / ratio);
+          samples = new Float32Array(newLength);
+          for (let i = 0; i < newLength; i++) {
+            samples[i] = channelData[Math.round(i * ratio)];
+          }
+        } else {
+          samples = channelData;
+        }
+
+        // Convert Float32 PCM to Int16
+        const int16Samples = new Int16Array(samples.length);
+        for (let i = 0; i < samples.length; i++) {
+          const s = Math.max(-1, Math.min(1, samples[i]));
+          int16Samples[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+
+        // Encode in chunks
+        const chunkSize = 1152;
+        for (let i = 0; i < int16Samples.length; i += chunkSize) {
+          const chunk = int16Samples.subarray(i, i + chunkSize);
+          const encoded = mp3Encoder.encodeBuffer(chunk);
+          if (encoded.length > 0) mp3Data.push(encoded);
+        }
+      }
+
+      // Flush encoder
+      const flushed = mp3Encoder.flush();
+      if (flushed.length > 0) mp3Data.push(flushed);
+      audioCtx.close();
+
+      const mp3Blob = new Blob(mp3Data as unknown as BlobPart[], { type: 'audio/mp3' });
+      const url = URL.createObjectURL(mp3Blob);
+      const link = document.createElement('a');
+      link.download = `Speaking-Answers-${studentName}-Unit${selectedUnit?.id ?? ''}.mp3`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('MP3 encoding failed:', err);
+      alert('Could not encode MP3. Your browser may not support audio decoding.');
+    }
+  };
+
   const handleBackToUnits = () => {
     setSelectedUnit(null);
     setPracticeMode('MENU');
@@ -865,6 +933,7 @@ DEVELOPED BY TEACHER VO THI THU HA
     setPartScores({ part1: 0, part2: 0 });
     setPartCompletion({ part1: false, part2: false });
     setScoreSubmitted(false);
+    userAudioBlobsRef.current = [];
   };
 
   const handleBackToMode = () => {
@@ -957,7 +1026,7 @@ DEVELOPED BY TEACHER VO THI THU HA
           {passed ? (
             <div className="space-y-6">
               <p className="text-green-600 font-bold text-xl">🎉 Congratulations! You have completed this speaking task excellently.</p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <div className="flex flex-col sm:flex-row justify-center gap-4 flex-wrap">
                 <button
                   onClick={handleDownloadCertificate}
                   className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-lg rounded-2xl shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 transform hover:-translate-y-1 transition-all flex items-center gap-3"
@@ -979,6 +1048,15 @@ DEVELOPED BY TEACHER VO THI THU HA
                   <i className="fas fa-file-pdf text-xl"></i>
                   Download Feedback (.pdf)
                 </button>
+                {userAudioBlobsRef.current.length > 0 && (
+                  <button
+                    onClick={handleDownloadAnswers}
+                    className="px-8 py-4 bg-emerald-600/20 text-emerald-400 font-bold text-lg rounded-2xl border border-emerald-500/30 hover:bg-emerald-600/30 transform hover:-translate-y-1 transition-all flex items-center gap-3"
+                  >
+                    <i className="fas fa-headphones text-xl"></i>
+                    Download Your Answers (.mp3)
+                  </button>
+                )}
               </div>
             </div>
           ) : (
