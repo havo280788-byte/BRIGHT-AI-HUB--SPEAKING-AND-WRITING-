@@ -279,6 +279,19 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
 
+  // Auto-play the latest examiner message via browser TTS when Gemini TTS has no audio
+  useEffect(() => {
+    if (practiceMode !== 'FREE_SPEAKING') return;
+    if (chatHistory.length === 0) return;
+    const lastMsg = chatHistory[chatHistory.length - 1];
+    // Only auto-play AI messages that have no Gemini audio
+    if (lastMsg.role !== 'ai' || lastMsg.audioUrl) return;
+    // Small delay to let the UI render first
+    const timeout = setTimeout(() => speakWithBrowser(lastMsg.text), 400);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatHistory, practiceMode]);
+
   // Keep ref in sync with state
   useEffect(() => {
     partScoresRef.current = partScores;
@@ -864,19 +877,34 @@ DEVELOPED BY TEACHER VO THI THU HA
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Browser TTS fallback when Gemini TTS fails
+  // Browser TTS — reliable fallback when Gemini TTS fails
   const speakWithBrowser = (text: string) => {
     if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel(); // stop any ongoing speech
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    // Prefer an English voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const enVoice = voices.find(v => v.lang.startsWith('en'));
-    if (enVoice) utterance.voice = enVoice;
-    window.speechSynthesis.speak(utterance);
+    utterance.rate = 0.88;
+    utterance.pitch = 1.05;
+
+    const doSpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const enVoice =
+        voices.find(v => v.lang === 'en-US' && v.localService) ||
+        voices.find(v => v.lang.startsWith('en-')) ||
+        voices.find(v => v.lang.startsWith('en'));
+      if (enVoice) utterance.voice = enVoice;
+      window.speechSynthesis.speak(utterance);
+    };
+
+    // Voices may not be loaded yet on first call
+    if (window.speechSynthesis.getVoices().length > 0) {
+      doSpeak();
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        doSpeak();
+      };
+    }
   };
 
   const handleDownloadAnswers = async () => {
