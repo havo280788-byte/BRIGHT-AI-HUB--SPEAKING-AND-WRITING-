@@ -257,6 +257,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
 
   // Collect all user answer blobs for Free Speaking download
   const userAudioBlobsRef = useRef<Blob[]>([]);
+  const [userAnswerCount, setUserAnswerCount] = useState(0);
 
   // Analysis State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -450,6 +451,7 @@ const SpeakingPractice: React.FC<Props> = ({ onComplete, studentName }) => {
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
     // Save blob for later download
     userAudioBlobsRef.current.push(audioBlob);
+    setUserAnswerCount(prev => prev + 1);
     const base64 = await blobToBase64(audioBlob);
 
     // Determine next question
@@ -934,6 +936,7 @@ DEVELOPED BY TEACHER VO THI THU HA
     setPartCompletion({ part1: false, part2: false });
     setScoreSubmitted(false);
     userAudioBlobsRef.current = [];
+    setUserAnswerCount(0);
   };
 
   const handleBackToMode = () => {
@@ -1023,10 +1026,11 @@ DEVELOPED BY TEACHER VO THI THU HA
             </div>
           )}
 
+          {/* Certificate — only for passed students (≥ 6.0) */}
           {passed ? (
-            <div className="space-y-6">
-              <p className="text-green-600 font-bold text-xl">🎉 Congratulations! You have completed this speaking task excellently.</p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4 flex-wrap">
+            <div className="space-y-3">
+              <p className="text-green-500 font-bold text-xl">🎉 Congratulations! You have completed this speaking task excellently.</p>
+              <div className="flex justify-center">
                 <button
                   onClick={handleDownloadCertificate}
                   className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-lg rounded-2xl shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 transform hover:-translate-y-1 transition-all flex items-center gap-3"
@@ -1034,37 +1038,45 @@ DEVELOPED BY TEACHER VO THI THU HA
                   <i className="fas fa-certificate text-xl"></i>
                   Download Certificate
                 </button>
-                <button
-                  onClick={handleDownloadFeedback}
-                  className="px-8 py-4 bg-white/10 text-white font-bold text-lg rounded-2xl border border-white/20 hover:bg-white/20 transform hover:-translate-y-1 transition-all flex items-center gap-3"
-                >
-                  <i className="fas fa-file-download text-xl text-blue-400"></i>
-                  Download Feedback (.txt)
-                </button>
-                <button
-                  onClick={handleDownloadFeedbackPDF}
-                  className="px-8 py-4 bg-blue-600/20 text-blue-400 font-bold text-lg rounded-2xl border border-blue-500/30 hover:bg-blue-600/30 transform hover:-translate-y-1 transition-all flex items-center gap-3"
-                >
-                  <i className="fas fa-file-pdf text-xl"></i>
-                  Download Feedback (.pdf)
-                </button>
-                {userAudioBlobsRef.current.length > 0 && (
-                  <button
-                    onClick={handleDownloadAnswers}
-                    className="px-8 py-4 bg-emerald-600/20 text-emerald-400 font-bold text-lg rounded-2xl border border-emerald-500/30 hover:bg-emerald-600/30 transform hover:-translate-y-1 transition-all flex items-center gap-3"
-                  >
-                    <i className="fas fa-headphones text-xl"></i>
-                    Download Your Answers (.mp3)
-                  </button>
-                )}
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              <p className="text-orange-600 font-bold text-xl">Keep practicing to reach 6.0 to unlock your certificate!</p>
-              <Button onClick={handleBackToUnits}>
-                Return to Units
-              </Button>
+            <div className="space-y-2">
+              <p className="text-orange-400 font-bold text-lg">Keep practicing to reach 6.0 to unlock your certificate!</p>
+              <p className="text-slate-500 text-sm">You can still download your feedback and answers below.</p>
+            </div>
+          )}
+
+          {/* Download Feedback — always visible after session */}
+          {finalResult && (
+            <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4 flex-wrap">
+              <button
+                onClick={handleDownloadFeedback}
+                className="px-8 py-4 bg-white/10 text-white font-bold text-lg rounded-2xl border border-white/20 hover:bg-white/20 transform hover:-translate-y-1 transition-all flex items-center gap-3"
+              >
+                <i className="fas fa-file-download text-xl text-blue-400"></i>
+                Download Feedback (.txt)
+              </button>
+              <button
+                onClick={handleDownloadFeedbackPDF}
+                className="px-8 py-4 bg-blue-600/20 text-blue-400 font-bold text-lg rounded-2xl border border-blue-500/30 hover:bg-blue-600/30 transform hover:-translate-y-1 transition-all flex items-center gap-3"
+              >
+                <i className="fas fa-file-pdf text-xl"></i>
+                Download Feedback (.pdf)
+              </button>
+            </div>
+          )}
+
+          {/* Download Answers — always visible when recordings exist */}
+          {userAnswerCount > 0 && (
+            <div className="mt-4">
+              <button
+                onClick={handleDownloadAnswers}
+                className="mx-auto flex items-center gap-3 px-8 py-4 bg-emerald-600/20 text-emerald-400 font-bold text-lg rounded-2xl border border-emerald-500/30 hover:bg-emerald-600/30 transform hover:-translate-y-1 transition-all"
+              >
+                <i className="fas fa-headphones text-xl"></i>
+                Download Your Answers (.mp3) — {userAnswerCount} recording{userAnswerCount > 1 ? 's' : ''}
+              </button>
             </div>
           )}
         </Card>
