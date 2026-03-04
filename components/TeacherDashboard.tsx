@@ -17,7 +17,8 @@ const STUDENTS = [
     "Nguyen Phuong Uyen", "Vu Thi Ha Vy"
 ];
 
-import { getAllStudentStats } from '../services/firebaseService';
+import { getAllStudentStats, StudentRecord } from '../services/firebaseService';
+import { exportToCSV } from '../utils/csvExport';
 
 interface StudentAggregatedInfo {
     name: string;
@@ -29,6 +30,7 @@ interface StudentAggregatedInfo {
 
 export const TeacherDashboard: React.FC = () => {
     const [aggregatedData, setAggregatedData] = useState<StudentAggregatedInfo[]>([]);
+    const [rawRecords, setRawRecords] = useState<StudentRecord[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -37,6 +39,7 @@ export const TeacherDashboard: React.FC = () => {
             try {
                 // Fetch all cloud data
                 const cloudRecords = await getAllStudentStats();
+                setRawRecords(cloudRecords);
                 const cloudMap = new Map(cloudRecords.map(r => [r.name, r.stats]));
 
                 // Merge with predefined STUDENT list to ensure all names are present
@@ -97,6 +100,22 @@ export const TeacherDashboard: React.FC = () => {
 
     return (
         <div className="space-y-8 animate-fade-in">
+            {/* Header with Export Action */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-black text-white tracking-tight">Class Management</h1>
+                    <p className="text-slate-400 font-medium">Monitor student progress and manage data backups</p>
+                </div>
+                <button
+                    onClick={() => exportToCSV(rawRecords)}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition-all active:scale-95 group"
+                    title="Download all student data to CSV for backup"
+                >
+                    <i className="fas fa-file-csv text-xl group-hover:rotate-12 transition-transform"></i>
+                    <span>Tải Sao lưu CSV</span>
+                </button>
+            </div>
+
             {/* Class Summary Header */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white !border-0 relative overflow-hidden group">
